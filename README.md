@@ -23,6 +23,9 @@ It creates the profile from the shipped web template, installs this bundle, writ
 material folder is. It cannot supply a model key: without `DEEPSEEK_API_KEY` in `<home>/.credentials.yaml` every turn
 fails, and the installer says so.
 
+Then read [docs/using.md](docs/using.md) for the first five minutes, and [docs/known-gaps.md](docs/known-gaps.md) for
+what is not yet solid. If something does not work, the gaps list is the honest inventory of where to look first.
+
 ## Setup
 
 The rest of this file describes the prototype this fork started from. Its setup has many steps, so an agent does it
