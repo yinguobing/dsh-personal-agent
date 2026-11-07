@@ -13,7 +13,7 @@ import { AcknowledgementSchema, readTool, tool, type Tool } from './tool.ts'
 export interface ExecutorToolsHost {
   readonly engine: Pick<EngineForExecutor, 'report' | 'reply' | 'markUnrelated' | 'handback' | 'followForContext'>
   readonly store: Pick<Store, 'tickets' | 'replyStatus' | 'atomic'>
-  readonly sessions: Pick<Sessions, 'relay' | 'notify'>
+  readonly sessions: Pick<Sessions, 'relay' | 'notify' | 'cancel'>
   readonly resources: ResourceHost
   /** GitHub Source context whose pull-request rules govern claiming a reported PR. */
   readonly github: SourceContext
@@ -94,6 +94,9 @@ export function executorTools(host: ExecutorToolsHost, ticket: Ticket): Tool[] {
             ...(args.question_for_trigger_id ? { askedBy: args.question_for_trigger_id } : {}),
             ...(args.reply_to_trigger_id ? { answers: args.reply_to_trigger_id } : {}) }
           const updated = host.engine.report(ticketId, report)
+          // A question ends the turn: the worker waits for the person instead of working past what it just asked.
+          // Deferred so this tool's own result reaches the Session before the turn is cancelled.
+          if (updated.attention) setTimeout(() => host.sessions.cancel(`worker-${ticketId}`, 'blocked on a question for the person'), 0)
           const relay = reportRelay(updated, report)
           if (relay) host.sessions.relay(relay.id, relay.text)
           const notification = relay ? 'orchestrator' : 'internal_only'

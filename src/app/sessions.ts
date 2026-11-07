@@ -167,6 +167,13 @@ export class Sessions {
   }
   /** The id of the message `prompt` delivers under `requestId`, which DSH's inbox events name it by. */
   promptedId(requestId: string): MessageId { return messageId(key(requestId)) }
+  /**
+   * Ends a Session's current turn while keeping what waits in its inbox, so it goes idle until something wakes it.
+   * A worker that asked a person a question uses this to stop working instead of continuing past its own question.
+   */
+  cancel(sessionId: string, reason: string): void {
+    this.ctx.agents.get(sessionId as SessionId)?.cancel({ kind: 'hook', reason }, { keepInbox: true })
+  }
   /** Enqueues a steering relay to the main Session; relays are durable and retried by `Effects` until delivered, at most once per `requestId`. */
   relay(requestId: string, text: string): void { this.host.effects.enqueue('relay', requestId, { text }) }
   /** Enqueues a durable background notice for injection into the main Session; a new notice with the same `name` replaces a still-waiting notice of that `name`. */
