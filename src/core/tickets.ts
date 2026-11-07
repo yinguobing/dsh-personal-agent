@@ -234,6 +234,8 @@ export class Tickets extends EnginePart {
   addInput(ticket: Ticket, input: TicketInput): void {
     if (ticket.inputs.some(existing => existing.id === input.id)) return
     ticket.inputs.push(input); ticket.updatedAt = this.now()
+    // A person's message answers what the ticket waits on: clear the Attention, so no stage keeps saying it waits for them.
+    if (input.kind === 'trigger' && input.human) delete ticket.attention
     // Hold back automated inputs while the worker is waiting on a person.
     const held = liveTicket(ticket) && automatic(input) && waitsForPerson(ticket)
     if (!held) ticket.undelivered.push(input.id)

@@ -792,6 +792,15 @@ describe('worker reports', () => {
     expect(cleared).not.toHaveProperty('attention')
     expect(h.withdrawn).toEqual([key('attention-reply', asked.attention!.id), key('attention-reply', replaced.attention!.id)])
   })
+  it('treats a person\'s next message on the ticket as answering its pending question', () => {
+    const h = harness()
+    const ticketId = accepted(h).ticketId!
+    h.engine.report(ticketId, { state: 'progress', summary: 'need a call', question: 'Which color?' })
+    expect(h.repo.tickets.get(ticketId)!.attention).toBeDefined()
+    h.engine.receive(trigger('2', { text: 'blue' }))
+    h.pump()
+    expect(h.repo.tickets.get(ticketId)!.attention).toBeUndefined()
+  })
   it('ends the ticket on a final report: dropped drops it, ready completes it unless it follows a Source\'s Thread that is open', () => {
     const outcome = (state: 'ready' | 'dropped' | 'failed', follows: boolean, closed = false) => {
       const h = harness()

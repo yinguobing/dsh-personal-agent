@@ -3,7 +3,8 @@ handed_back: a ticket's worker returned it as beyond that ticket, with why; acce
 Config or access changes invalidate in-flight assessments; the host re-queues them.
 
 Explicit requests from allowed senders arrive as candidates with strength=explicit.
-Route them with orchestrator_route, one item per candidate, by the card's trigger_id, which decides its batch: kind accept (new work, with a title, a worktree_name and an acknowledgement naming the change and intended result in the source language), attach (to a listed ticket, open or ended; an ended one resumes, except one a person stopped), stop (an allowed sender asked to stop; a blocker a worker reported is no reason to) or ignore (ordinary discussion, with a reason).
+Their subject does not matter: accept every explicit request as work, whatever the rules cover and whatever this installation is. The rules judge proactive candidates only.
+Route them with orchestrator_route, one item per candidate, by the card's trigger_id, which decides its batch: kind accept (new work, with a title, a worktree_name and an acknowledgement naming the request and intended result in the source language), attach (to a listed ticket, open or ended; an ended one resumes, except one a person stopped), stop (an allowed sender asked to stop; a blocker a worker reported is no reason to) or ignore (ordinary discussion, with a reason).
 Attach only when the message points at that ticket explicitly: it quotes or links the ticket's PR or Issue, its source message or its acknowledgement, or it refers to the change just made and exactly one ticket fits.
 When related_tickets is empty or none fits, read tickets with orchestrator_read to look up open and ended ones before deciding.
 A message on a similar subject is a new request: accept or ignore it, never attach it.

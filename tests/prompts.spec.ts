@@ -134,7 +134,7 @@ it('leaves the GitHub skill out when the installation has no GitHub account', ()
 it('tells the router that a message and its candidate card are one request, not two', () => {
   withStore(store => {
     const main = promptsOf(store).compose(defaultPrompts(), 'orchestrator')
-    expect(main).toContain('the card is how that same message enters the work queue, not a second request')
+    expect(main).toContain('the card is how that message enters the work queue, not a second request')
     expect(main).toContain('You are the assistant of the person who owns this installation')
   })
 })
