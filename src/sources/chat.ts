@@ -7,7 +7,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { UserMessage } from '@deepseek-ai/dsh-session'
 import { z } from 'zod'
 import { key, type Trigger } from '../core/index.ts'
-import { health, sourceContext } from './host.ts'
+import { health, sourceContext, type SourceContext } from './host.ts'
 import type { SourceKind } from './kind.ts'
 
 export const SOURCE = 'chat'
@@ -18,11 +18,11 @@ const ChatConfigSchema = z.object({}).strict()
 export type ChatConfig = z.infer<typeof ChatConfigSchema>
 
 /** Builds the Trigger for one message of the owner's conversation; its Thread is the conversation itself. */
-export function chatTrigger(input: { sessionId: string; messageId: string; text: string; at: string }): Trigger {
+export function chatTrigger(input: { sessionId: string; threadId: string; messageId: string; text: string; at: string }): Trigger {
   return {
     id: key(SOURCE, input.messageId),
     source: SOURCE,
-    threads: [{ source: SOURCE, id: input.sessionId }],
+    threads: [{ source: SOURCE, id: input.threadId }],
     actor: { source: SOURCE, id: OWNER },
     human: true,
     addressed: 'direct',
@@ -35,6 +35,17 @@ export function chatTrigger(input: { sessionId: string; messageId: string; text:
 /** Whether a message is the owner writing in this installation's main Session, rather than a relay or another Session. */
 export function isOwnerMessage(masterId: string, agentId: string, message: Pick<UserMessage, 'source'>): boolean {
   return agentId === masterId && message.source.kind === 'user'
+}
+
+/**
+ * The thread a message belongs to. One conversation carries many unrelated requests, and an ended ticket's thread
+ * resumes on any later message there; so a message joins the existing thread only while a ticket waits on that
+ * conversation for the person's answer. Otherwise it starts a thread of its own and becomes new work.
+ */
+export function threadFor(source: Pick<SourceContext, 'tickets' | 'triggers'>, sessionId: string, messageId: string): string {
+  const waiting = source.tickets.open().find(ticket => ticket.attention)
+  const origin = waiting ? source.triggers.get(waiting.origin.triggerId) : undefined
+  return origin?.threads[0]?.id ?? `${sessionId}:${messageId}`
 }
 
 /** The text of a message, with a placeholder for a part this Source cannot read as text. */
@@ -71,7 +82,8 @@ export function apply(ctx: Context): void {
       if (source.config<ChatConfig>(SOURCE) === undefined) return
       const text = messageText(message)
       if (!text) return
-      void source.receive(chatTrigger({ sessionId: agent.id, messageId: String(message.id), text, at: new Date().toISOString() }))
+      void source.receive(chatTrigger({ sessionId: agent.id, threadId: threadFor(source, agent.id, String(message.id)),
+        messageId: String(message.id), text, at: new Date().toISOString() }))
     }
     return ctx.on('agent/inbox/inserted', onMessage)
   })
