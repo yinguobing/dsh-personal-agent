@@ -16,6 +16,7 @@ export interface SourceContextDeps {
   readonly sources: SourceRegistry
   /** Throws when accessed before initial setup completes. */
   readonly deployment: Deployment
+  readonly masterId: string
   readonly ready: Promise<void>
   configured(): boolean
   /** Setup problem whose `place` matches the Source kind receives it on `context.problem`. */
@@ -35,6 +36,7 @@ export function sourceContextOf(deps: SourceContextDeps, kind: { kind: string; h
   const health = deps.sources.healthEntries(kind.health)
   return {
     get deployment() { return deps.deployment },
+    masterId: deps.masterId,
     commands: deps.commands,
     ready: deps.ready,
     configured: () => deps.configured(),

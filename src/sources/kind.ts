@@ -106,6 +106,11 @@ export interface SourceKind<C extends Record<string, unknown> = Record<string, u
   repliesTo?(trigger: Trigger): string | undefined
   /** Policy section for kinds whose senders have their own identity. */
   policy?: SourcePolicyPart<Record<string, unknown> & { allowed: { id: string; name?: string }[] }>
+  /**
+   * Senders a fresh installation lets in before anyone edits the Policy. Seeded once, when the Source's Policy part is
+   * still absent, so a personal edition works on first start; later Policy edits are never overwritten.
+   */
+  defaultPolicy?: { allowed: { id: string; name?: string }[] }
   /** Rereads display names for row keys (such as chat names), stores the resolved names in `KV.sources.labels(kind)`, and returns them. */
   refreshLabels?(host: SourceHost, signal?: AbortSignal): Promise<Record<string, string>>
   /** Variables the kind registers with the execution environment and how their values are computed. */

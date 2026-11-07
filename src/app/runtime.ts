@@ -14,7 +14,7 @@ import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { lockSync } from 'proper-lockfile'
 import { Engine, key, reasonText, type EngineForSettings, type ReceiveResult, type Ticket, type Trigger } from '../core/index.ts'
-import { allowedSender, settingsPolicy } from '../policy.ts'
+import { allowedSender, policyVersion, settingsPolicy } from '../policy.ts'
 import { SourceRegistry } from '../sources/registry.ts'
 import { Commands } from '../infra/commands.ts'
 import type { Deployment, Machine } from '../deployment.ts'
@@ -106,11 +106,23 @@ export class Runtime extends Service implements SourceHost {
       const commands = this.commands = new Commands(() => setup.deployment, setup.commandEnvironment, this.lifetime)
       const board = this.board
       const effects = this.effects = new Effects(store, board)
+      // A personal installation has one principal. A Source that declares a default allowed list gets it the first time
+      // the Source appears, so the owner's first message is an explicit request; later Policy edits are never overwritten.
+      const seedPolicy = (kind: { kind: string; defaultPolicy?: { allowed: { id: string; name?: string }[] } }): void => {
+        if (!kind.defaultPolicy) return
+        const current = store.settings()
+        if (current.policy.sources[kind.kind]) return
+        const policy = { ...current.policy, sources: { ...current.policy.sources,
+          [kind.kind]: { allowed: kind.defaultPolicy.allowed.map(entry => ({ ...entry })), admission: {} } } }
+        const next = { ...current, policy }
+        store.saveSettings(next, { source: 'internal', block: 'policy', policyVersion: policyVersion(next), policyChanged: true, notified: [] })
+      }
       const sources = this.sources = new SourceRegistry(() => store.settings(), board, kind => {
+        seedPolicy(kind)
         // Sync source member lists once startup completes when a source plugin loads dynamically.
         if (kind.policy?.sync) void this.ready?.then(() => this.settings.syncable().includes(kind.kind) ? this.settings.sync(kind.kind) : undefined)
           .catch(() => { /* sync() records its failure in health. */ })
-        return () => {}
+        return () => { /* Registration itself has no teardown. */ }
       })
       const links: LinkHost = { store, links: this.sourceLinks, commands, sources, lifetime: this.lifetime }
       const link = (trigger: Trigger, signal?: AbortSignal) => sourceLink(links, trigger, signal)
@@ -125,6 +137,8 @@ export class Runtime extends Service implements SourceHost {
       const policyChanged: EngineForSettings['policyChanged'] = (from, to, effects) => { this.engine.policyChanged(from, to, effects) }
       this.settings = new Settings({ store, sources, engine: { policyChanged }, health: board, context: ctx, lifetime: this.lifetime, sessions,
         sourceHost: this, setup, requestPass: () => { this.passes.request() } })
+      // Sources mounted before the Engine exists seed here; ones mounted later seed when they register.
+      for (const kind of sources.all()) seedPolicy(kind)
       this.executor = new DshExecutor({ context: ctx, get engine() { return runtime.engine }, store, effects, health: board.claim('worker'), machine,
         lifetime: this.lifetime, sessions, closing: () => this.closing(), paused: () => this.paused(), environment, sourceLink: link,
         repliedTo: trigger => repliedTo({ store, sources }, trigger) })
@@ -156,7 +170,7 @@ export class Runtime extends Service implements SourceHost {
       const evaluateDue = () => { engine.evaluateDue(); evals.set(evalsHealth(store)) }
       const passes = this.passes = new Passes({ engine: { receive: trigger => engine.receive(trigger), evaluateDue }, effects,
         health: this.runtimeHealth, lifetime: this.lifetime, configured: () => setup.configured(), closing: () => this.closing() })
-      this.sourceDeps = { store, engine, outbox, commands, sources, get ready() { return runtime.ready },
+      this.sourceDeps = { store, engine, outbox, commands, sources, masterId, get ready() { return runtime.ready },
         get deployment() { return setup.deployment }, configured: () => setup.configured(),
         get setupProblem() { return setup.problem }, get feishuProblem() { return setup.feishuProblem }, receive: trigger => passes.receive(trigger) }
       this.toolHost = { context: ctx, engine, store, prompts, sessions, settings: this.settings, assessor, resources,
