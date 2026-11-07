@@ -234,7 +234,9 @@ export function mainTools(host: MainToolsHost, agent: Agent): Tool[] {
         const reply = host.engine.reply({ purpose: args.purpose, text: args.text, ...(args.trigger_id ? { triggerId: args.trigger_id } : {}),
           ...(args.ticket_id ? { ticketId: args.ticket_id } : {}), ...(args.human_action ? { question: args.human_action } : {}) })
         await host.sendReplies()
-        return { status: host.store.replyStatus(reply.id) ?? reply.status }
+        const status = host.store.replyStatus(reply.id) ?? reply.status
+        // A Source without a Channel (the conversation is one) cannot carry a reply: say so, rather than reporting a silent drop.
+        return status === 'dropped' ? { status, note: 'This Source has no reply transport, so nothing was sent; answer the person in this conversation instead.' } : { status }
       },
     }),
     tool({

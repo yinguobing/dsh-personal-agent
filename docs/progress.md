@@ -92,3 +92,35 @@
 1. **回答问题很难**：worker 的澄清问题在侧边栏显示「Waiting for answer」，但页面上的选项按钮没有稳定出现，点 Answer 也没进入作答态。对普通人来说这一步就是死路。
 2. **追问可能被当成新任务**：上一轮实验里，对已开票的补充说明被 Router 判成 accept 新票，而不是 attach 到原票；worker 因此说「上一轮的具体交付形式我这边没收到」。
 3. 会话选择有坑：直接打开页面时，输入框可能绑定到别的会话（实验中出现过一次，消息没进主会话）。
+
+## 2026-11-07 · P0-e：全链路跑通两次（消息 → 票 → worker → 文件 → 回复）
+
+### 关键发现：Web UI 的输入框不一定绑定主会话
+
+抓包发现：打开页面后直接输入，前端会先发 `session/create`，把消息发到一个**新会话**（`session-xxxx`），而不是主会话。这意味着用户对着「dsh-superagent orchestrator」标题打字，实际可能进了别的会话，chat Source 完全收不到。这是「单入口」必须修的产品问题。
+
+绕开办法：直接调 `POST /api/session/prompt`，指定 `sessionId = masterId`。本轮用它做了两次干净的端到端。
+
+### 第一次（产品介绍）
+
+- 发送：`写一段三句话的产品介绍，产品名是「小白」，目标用户是独立开发者，存到 drafts/intro.md`
+- t+10s：票出现，stage `working`，标题「写一段三句话的「小白」产品介绍（目标用户：独立开发者）并保存到 drafts/intro.md」
+- t+60s：票结束（列表返回 0）
+- 产物：`work/xiaobai-intro-draft-ab458bc8d5ea/drafts/intro.md`，三句话，内容可用
+- 主会话收到结束通知并转述了正文
+
+### 第二次（问候语，回归）
+
+- 发送：`用一句话写一句今天的问候语，存到 drafts/hello.md`
+- t+10s working → t+40s 结束
+- 产物：`work/<ticket>/drafts/hello.md`，41 字，一句话
+- 主会话里出现「今日问候语已写好，保存在 drafts/hello.md：……」，随后一轮确认没有待办
+
+### 修的一处
+
+`orchestrator_reply` 在 Source 没有 Channel 时只返回 `{status:'dropped'}`，Router 会以为发送失败而反复尝试。现在附一句 `note`：这个 Source 没有回复通道，请在对话里直接回答。对话场景（chat）正属于这种。
+
+### 下一轮
+
+1. 让 Web UI 的输入框默认落在主会话（或让 chat Source 接受「当前活跃会话」）
+2. 问题回传：worker 的澄清问题要直接出现在对话里，答一句就回到那张票

@@ -252,7 +252,7 @@ it('returns where a reply stands: sent, or dropped when its conversation can no 
   const reply = (text: string) => h.runTool(h.runtime.masterId, 'orchestrator_reply', { ticket_id: ticket.id, purpose: 'result', text })
   expect(await reply('修好了。')).toEqual({ status: 'sent' })
   vi.mocked(Commands.prototype.lark).mockRejectedValue(new CliError('the message was withdrawn', 230011))
-  expect(await reply('修好了，请看 PR。')).toEqual({ status: 'dropped' })
+  expect(await reply('修好了，请看 PR。')).toEqual({ status: 'dropped', note: expect.stringContaining('no reply transport') })
 })
 
 it('checks an acknowledgement against the IM word limit, not a character count', async () => {
