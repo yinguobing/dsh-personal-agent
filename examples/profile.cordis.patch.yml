@@ -10,3 +10,19 @@
 # Feishu is optional: uncomment to enable its Source, then set the bot's lark-cli on the Feishu Source.
 # - id: dsh-superagent-feishu
 #   disabled: false
+
+# A worker is confined to its ticket directory, and runs unattended: a sandbox refusal is final instead of waiting for an
+# approval nobody gives. The main Session keeps full access, which is the operator's own machine.
+- id: permission
+  config:
+    defaultPreset: workspace-write
+    presets:
+      read-only:
+        sandbox: read-only
+        approval: ask
+      workspace-write:
+        sandbox: workspace-write
+        approval: never
+      danger-full-access:
+        sandbox: danger-full-access
+        approval: never

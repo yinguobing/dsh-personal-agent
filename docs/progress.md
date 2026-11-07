@@ -225,3 +225,30 @@
 ### 发现的新问题
 
 worker 除了写票据目录，还**另存了一份到 `/home/xiaobai/xiaobai/drafts/`**——那是线上小白的家目录。个人版也许最终希望交付到用户自己的目录，但现在它是自作主张，而且碰了不该碰的地方。下一轮要么用提示词约束，要么在权限层面限制。
+
+## 2026-11-07 · P1-d：worker 只能在票据目录里写
+
+### 做了什么
+
+- `Sessions.ensure` 按角色给权限：worker 用 `workspace-write`（只能写自己的票据目录，读不限），主 Session 仍是 `danger-full-access`（它跑在主人自己的机器上）。
+- 示例 profile 补上权限预设：`workspace-write` 的 `approval` 设为 `never`，并显式 `defaultPreset`。原因见下。
+
+### 发现：worker 会去申请提权，然后无限等待
+
+第一次只改沙箱不够——worker 被拦后会弹 `approval/asked` 请求提权到 danger-full-access。这个环境里没人点「同意」，票据就一直挂在 working。也就是说：**无人值守的 worker 不能有「问人授权」这条路**。
+
+把 `workspace-write` 的 approval 设成 `never` 后，拒绝是终局，worker 直接停下。
+
+（顺带踩到一个配置坑：只改 approval 会让「默认 sandbox+approval」组合匹配不到任何预设，DSH 拒绝启动；必须显式写 `defaultPreset`。）
+
+### 验证
+
+发「把 hi 写到 /home/xiaobai/xiaobai/psa-probe.txt」：
+
+- 30 秒内票进 `person`，文件**没有**创建；
+- worker 报告 `blocked`，并附证据（uid、目录权限、`Permission denied`）与一个问题：「改写到工作区内，还是你调整策略后我再写原路径？」；
+- 会话日志里 `approval/policy = never`，没有挂起的审批。
+
+### 遗留
+
+- 权限预设是 profile 级配置，bundle 不能替用户合并（会覆盖整个 presets 表）。已在 `examples/profile.cordis.patch.yml` 写明，产品化时要让安装流程自动写入。
