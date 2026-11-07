@@ -350,3 +350,32 @@ Web 入口从「碰运气」变成「确定的」。加上微信，两条入口�
 ### 发现的取舍
 
 信息不足时，worker 交的是「带占位的 ready」而不是 blocked。规则上说得通（诚实缺口也是交付），但产品上也许该问：**当缺口是全文骨架时，是不是该停下来问，而不是交一份填空题？** 下一轮决定。
+
+## 2026-11-07 · P3-a：主动的入口与「只记录不行动」
+
+### 做了什么
+
+1. **素材夹 Source**（`src/sources/inbox.ts`）：监听 `<stateDir>/inbox`，新文件或改动过的文件变成一个 Trigger。关键在 `addressed` 不设（不是对你说的），所以它只能成为 **inferred candidate**——没被规则覆盖就不动手。
+   文本文件带 600 字预览，判断者不用再读文件。
+2. **默认规则换成个人场景**（`policy.ts`）：`素材归档`（放进来的东西明显属于在做的一篇东西时才可以受理）与 `临近的截止`（本人记录里同时有日期和剩余工作才算）。原型的「修错别字 / 调间距」删掉。
+3. 测试桩里显式声明自己需要的规则，不再依赖默认值。
+
+### 端到端验证（observe 模式）
+
+往 `state/superagent/inbox/` 丢一份 `slow-web-idea.md`（内容是一篇关于「网站为什么越来越慢」的素材）：
+
+- `health.inbox = ready / Watching inbox (1 files)`；
+- 45 秒内出现一条 decision：
+
+```
+ignore | [{"code":"observed","values":{"text":"New material whose own text says it belongs to a short piece the owner is writing; matches the filing rule. Observe mode records the judgement only."}}]
+```
+
+- 票据数 **0**。
+
+即：它看懂了、按规则判断「这确实该归档成一篇稿子的素材」、然后**只把判断记下来，没有动**。这就是 `observe` 该有的样子。
+
+### 说明
+
+- 这条链路要成立，缺一不可：Source 负责「看见」（未署名），Policy 负责「凭什么能动」（规则 + 模式），Engine 负责「记录而不执行」。三者现在都对齐了。
+- 规则名是中文（用户侧数据），测试里固定的英文桩改成了显式声明。

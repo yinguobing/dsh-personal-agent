@@ -31,6 +31,8 @@ export const KV = {
     builtIn: family<string, [base: string]>('prompt-built-in:') },
   /** Runtime: the main Session's ID. */
   runtime: { masterId: record<string>('master-id'), digestDay: record<string>('digest-day') },
+  /** Inbox: fingerprints of the files already handed to the Engine, so each is noticed once. */
+  inbox: { seen: record<string[]>('inbox-seen') },
   /** Weixin: the long-poll cursor, the one bound person, and the latest context token per person. */
   weixin: { buf: record<string>('weixin-buf'), owner: record<string>('weixin-owner'),
     context: family<string, [user: string]>('weixin-context:') },

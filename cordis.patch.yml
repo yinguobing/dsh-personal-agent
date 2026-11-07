@@ -12,6 +12,9 @@
     - id: dsh-superagent-weixin
       name: dsh-superagent/weixin-watch
       disabled: true
+    # A folder the person drops things into: unaddressed, so only a rule can make it act.
+    - id: dsh-superagent-inbox
+      name: dsh-superagent/inbox-watch
     # Optional Feishu Source; requires configuring a bot CLI after enabling.
     - id: dsh-superagent-feishu
       name: dsh-superagent/feishu-watch

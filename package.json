@@ -18,6 +18,7 @@
     "./feishu-watch": "./lib/feishu-watch.js",
     "./chat-watch": "./lib/chat-watch.js",
     "./weixin-watch": "./lib/weixin-watch.js",
+    "./inbox-watch": "./lib/inbox-watch.js",
     "./package.json": "./package.json",
     "./locale/*.json": "./locale/*.json"
   },

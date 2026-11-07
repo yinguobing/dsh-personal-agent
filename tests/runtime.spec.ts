@@ -263,6 +263,9 @@ it('fans a person\'s later thread message out to the live worker as context and 
 })
 
 it('assesses a proactive observation in the orchestrator Session and creates the ticket only on a positive auto-mode decision', async () => {
+  const base = runtime.store.settings().policy
+  await runtime.settings.save('policy', { ...base, rules: [{ id: 'copy', name: 'Copy fixes', enabled: true, instruction: 'Fix typos.' },
+    { id: 'visual', name: 'Visual fixes', enabled: true, instruction: 'Fix spacing.' }] }, runtime.store.blockRevision('policy'), 'panel')
   const observe = (mode: 'observe' | 'auto') => runtime.settings.save('eval', { ...runtime.store.settings().eval, mode }, runtime.store.blockRevision('eval'), 'panel')
   await observe('observe')
   const trigger = feishu('3', '这个文案好奇怪，改成“浏览网页”吧', { mentions: [] })
@@ -294,7 +297,10 @@ it('assesses a proactive observation in the orchestrator Session and creates the
 
 it('accepts silently under a rule that says so, gives the worker the rule procedure, and closes it as dropped when nothing is left for a human', async () => {
   const policy = runtime.store.settings().policy
-  await runtime.settings.save('policy', { ...policy, rules: [...policy.rules, { id: 'silent-bugfix', name: '沉默地复现和修复', enabled: true, instruction: 'Reproduce minimally first; accept silently.' }] }, runtime.store.blockRevision('policy'), 'panel')
+  await runtime.settings.save('policy', { ...policy, rules: [{ id: 'copy', name: 'Copy fixes', enabled: true, instruction: 'Fix typos.' },
+    { id: 'visual', name: 'Visual fixes', enabled: true, instruction: 'Fix spacing.' },
+    { id: 'silent-bugfix', name: '沉默地复现和修复', enabled: true, instruction: 'Reproduce minimally first; accept silently.' }] },
+  runtime.store.blockRevision('policy'), 'panel')
   await runtime.settings.save('eval', { ...runtime.store.settings().eval, mode: 'auto' }, runtime.store.blockRevision('eval'), 'panel')
   const trigger = feishu('20', '切换主题后刷新，图标颜色不对', { mentions: [] })
   await receive(trigger)
@@ -656,7 +662,7 @@ it('describes rule edits in the Policy history and skips Policy syncs that chang
   await runtime.settings.sync('feishu')
   expect(revision()).toBe(before)
   await runtime.settings.save('policy', { ...runtime.store.settings().policy, rules: [{ ...settings.policy.rules[0]!, name: '文案' }, { ...settings.policy.rules[1]!, enabled: false }, { id: 'docs', name: '文档', enabled: true, instruction: 'x' }] }, runtime.store.blockRevision('policy'), 'panel')
-  expect(policyHistory(runtime.store, runtime.sources, policyVersion(runtime.store.settings())).items[0]!.changes).toEqual([{ code: 'ruleRenamed', from: 'Copy fixes', to: '文案' }, { code: 'ruleDisabled', name: 'Visual fixes' }, { code: 'ruleAdded', name: '文档' }])
+  expect(policyHistory(runtime.store, runtime.sources, policyVersion(runtime.store.settings())).items[0]!.changes).toEqual([{ code: 'ruleRenamed', from: '素材归档', to: '文案' }, { code: 'ruleDisabled', name: '临近的截止' }, { code: 'ruleAdded', name: '文档' }])
 })
 
 it('records an admission table change in the Policy history as one line for its Source, with a new Policy version', async () => {

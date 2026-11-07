@@ -60,8 +60,8 @@ export function assessmentOutcome(assessment: Assessment, settings: Pick<Setting
     rules: matches.map(match => match.rule_id), audit, ...(name ? { name } : {}) }
 }
 const DEFAULT_RULES = [
-  { id: 'copy', name: 'Copy fixes', enabled: true, instruction: 'Explicit requests to correct a typo, wording, punctuation or existing translation. Preserve product promises and business meaning.' },
-  { id: 'visual', name: 'Visual fixes', enabled: true, instruction: 'Explicit implementation requests for local spacing, alignment, overflow or styling, with a specified target or an objectively established existing standard/correct state to restore. Locating an element or calling it inconsistent, unattractive or hard to understand does not establish a target. Do not invent visual style, information hierarchy, rendering or interaction decisions. No redesign, new interaction or behavior. A known spacing defect does not authorize adjacent undefined restyling; assess only a clearly separable authorized scope. If direction or scope is unsettled, observe only: no acknowledgement, worker or unsolicited question.' },
+  { id: 'filing', name: '素材归档', enabled: true, instruction: 'The person put new material where the agent watches (a note, a link, a draft, a photo) and it plainly belongs to a piece they are writing or a task they hold. Accept when the material itself says what it is for; never accept an unrelated file, and never invent its purpose.' },
+  { id: 'deadline', name: '临近的截止', enabled: true, instruction: 'Something the person committed to has a date close enough that work must start now, and their own records name both the date and what remains to do. Accept only then; a vague intention is not a deadline.' },
 ]
 /** An assessment rule; its instruction may also specify PR reviewers and whether to wait for their approval. */
 export const RuleSchema = z.object({ id: RuleIdSchema, name: z.string().trim().min(1).max(LIMITS.ruleName), enabled: z.boolean(),

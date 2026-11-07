@@ -190,12 +190,12 @@ describe('revalidating a Mandate from the admission table', () => {
       eval: { mode: item.mode },
       sources: { feishu: feishuSource({ chats, directMessages: true }) },
       policy: {
-        rules: [{ id: 'copy', name: 'Copy', enabled: item.rule, instruction: 'x' }],
+        rules: [{ id: 'filing', name: 'Filing', enabled: item.rule, instruction: 'x' }],
         sources: { feishu: { allowed: item.listed ? [{ id: SENDER }] : [], admission: { [CHAT]: Object.fromEntries(cells.map(cell => [cell, grant(cell)])) } } },
       },
     })
     const addressed = item.cell === 'unlistedAddressed'
-    const observed = item.strength === 'inferred' ? { observation: { mode: 'auto' as const }, rules: ['copy'] } : {}
+    const observed = item.strength === 'inferred' ? { observation: { mode: 'auto' as const }, rules: ['filing'] } : {}
     const basis: MandateBasis = { via: 'admission', source: 'feishu', scope: { chatId: CHAT, direct: false, mentioned: addressed }, row: CHAT, cell: item.cell,
       ...addressed ? { addressed: 'mention' as const } : {}, ...observed }
     const mandate = { strength: item.strength, policyVersion: 'v', basis, actor: { source: 'feishu', id: SENDER }, scope: '' }
@@ -215,10 +215,10 @@ describe('revalidate and version', () => {
     const listed: MandateBasis = { via: 'listed', source: 'feishu', scope: { chatId: CHAT, direct: false }, sender: 'Alice' }
     expect(setup(silent).policy.revalidate({ ...mandate, basis: listed })).toBe(false)
     expect(policy.revalidate({ ...mandate, basis: listed })).toBe(true)
-    const inferred = { ...mandate, strength: 'inferred' as const, basis: { via: 'listed', observation: {}, rules: ['copy'] } satisfies MandateBasis }
+    const inferred = { ...mandate, strength: 'inferred' as const, basis: { via: 'listed', observation: {}, rules: ['filing'] } satisfies MandateBasis }
     expect(policy.revalidate(inferred)).toBe(true)
     expect(setup({ ...base, eval: { ...base.eval, mode: 'observe' } }).policy.revalidate(inferred)).toBe(false)
-    expect(setup({ ...base, policy: { ...base.policy, rules: base.policy.rules.map(rule => ({ ...rule, enabled: rule.id !== 'copy' })) } }).policy.revalidate(inferred)).toBe(false)
+    expect(setup({ ...base, policy: { ...base.policy, rules: base.policy.rules.map(rule => ({ ...rule, enabled: rule.id !== 'filing' })) } }).policy.revalidate(inferred)).toBe(false)
     expect(setup(nobody).policy.revalidate({ ...mandate, basis: { via: 'followup' } })).toBe(true)
   })
   it('changes the Policy version for rules, accept mode and the Sources\' parts, not for pause, concurrency, models or Source configuration', () => {
