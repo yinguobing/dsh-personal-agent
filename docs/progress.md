@@ -297,3 +297,32 @@ assistant : 你好，面板消息已收到。……
 ### 下一步
 
 客户端还没做——面板里目前没有这个输入框。下一轮加组件（消息列表 + 输入框 + 发送），并在浏览器里点一遍验证。
+
+## 2026-11-07 · P1-g：面板对话入口做完了（浏览器点通）
+
+### 做了什么
+
+- `src/client/chat.tsx`：Overview 顶部的「和它说话」——最近 12 轮对话 + 输入框 + 发送（Enter 发送，Shift+Enter 换行），消息用气泡区分你我。
+- 文案进 `locales.ts`（中英各一），样式进 `client.css`。
+- 服务端沿用上一轮的 `GET/POST /orchestrator/api/chat`。
+
+### 验证（真浏览器，Playwright）
+
+打开页面 → 点侧栏 Superagent → 在「和它说话」里输入「你好，我是从面板里发的」→ 点发送 → 25 秒后页面出现：
+
+```
+Talk to it
+你好，我是从面板里发的
+You're connected — I received your message from the panel. Tell me what you'd like done and I'll take it from there.
+```
+
+即：**不再依赖 DSH 当前打开哪个会话**，面板自己就能把话送到主会话并显示回复。
+
+### 意义
+
+Web 入口从「碰运气」变成「确定的」。加上微信，两条入口都成立了。
+
+### 遗留
+
+- 面板聊天只显示最近 12 轮，没有历史翻页；够 MVP，不够长期。
+- 回复要等 agent 这一轮跑完才轮询到；没有流式。
