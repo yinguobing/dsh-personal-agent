@@ -165,6 +165,9 @@ export class Runtime extends Service implements SourceHost {
           if (ended && setup.configured()) {
             const request = store.triggers.get(ended.origin.triggerId)?.text ?? ''
             for (const message of pullEndNotices(ended, request, setup.deployment.repository ?? '')) outbox.send(message)
+            // The ticket's worker session is history now: archive it so it stops competing with the person's conversation.
+            void ctx.workspaceRegistry.archiveSession?.(workerSessionId(ended.id) as SessionId, { stopActivity: true })
+              .catch(() => { /* archiving is hygiene; a live or missing session changes nothing */ })
           }
         } })
       // Update the `evals` health entry on every pass if an evaluation failed as unavailable within the last hour.
@@ -228,6 +231,8 @@ export class Runtime extends Service implements SourceHost {
     this.sessions.install()
     this.executor.install()
     await this.sessions.ensure(this.masterId, this.machine.stateDir, 'dsh-superagent orchestrator', 'orchestrator')
+    // The person has one conversation; pin it ahead of the workers' sessions, which are plumbing they never open.
+    void this.ctx.workspaceRegistry.pinSession?.(this.masterId as SessionId).catch(() => { /* a pin changes ordering only */ })
     for (const id of this.settings.syncable()) await this.settings.sync(id).catch(() => { /* sync() records its failure in health. */ })
     // If stop() was called while awaiting setup, session creation, or policy sync, do not start background loops.
     if (this.closing()) return

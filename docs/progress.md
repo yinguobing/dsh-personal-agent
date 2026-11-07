@@ -252,3 +252,25 @@ worker 除了写票据目录，还**另存了一份到 `/home/xiaobai/xiaobai/dr
 ### 遗留
 
 - 权限预设是 profile 级配置，bundle 不能替用户合并（会覆盖整个 presets 表）。已在 `examples/profile.cordis.patch.yml` 写明，产品化时要让安装流程自动写入。
+
+## 2026-11-07 · P1-e：把主会话钉住、把 worker 会话归档（Web 入口的一半）
+
+### 做了什么
+
+- 启动时 `workspaceRegistry.pinSession(masterId)`：主人的那一个会话排在所有会话前面。
+- 票据结束时 `archiveSession(worker-<ticket>, { stopActivity: true })`：worker 会话是管道，不该出现在人的会话列表里。
+
+### 验证
+
+`storages/workspace.json` 中：
+
+```
+"archivedSessionIds": ["worker-3b1afc23146892251b7c650b3788f928"],
+"pinnedSessionIds": ["orchestrator-fa36c0515377a8049dcb082045f67461"]
+```
+
+即归档与置顶都落盘成功。
+
+### 没解决的
+
+Web 端侧栏仍然按「每张票据一个 workspace」堆积（`morning-greeting-draft-…` 等），所以打开页面时它仍恢复上次的票据 workspace，输入框也就绑到那个已归档的 worker 会话上。DSH 没有「归档 workspace」的 API，只能从根上改：worker 不再为每张票据建独立 workspace，或者我们自己做一块面板内的对话入口。
