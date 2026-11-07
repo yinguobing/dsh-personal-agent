@@ -61,6 +61,8 @@ export interface HttpHost {
   chat(limit: number): { messages: ChatMessage[]; error?: string }
   /** Delivers one message to the person's conversation, as if they had written it in the DSH chat. */
   say(text: string, requestId: string): Promise<void>
+  /** Accepts a recorded observation as the person's own request, on a thread of its own. */
+  approveObserved(decisionId: string): void
 }
 /**
  * Represents a client-facing 400 or 404 error raised during management route parsing or lookup.
@@ -224,9 +226,9 @@ function routes(runtime: HttpHost): Routes {
       if (audit.would_accept !== true) throw new RouteError(400, 'This decision is not an observed proposal')
       const trigger = store.triggers.get(decision.triggerIds[0] ?? '')
       if (!trigger) throw new RouteError(404, 'Trigger not found')
-      // Approving an observation turns it into the person's own request: the router reads it, and the usual path follows.
-      await runtime.say(`把素材夹里的这份东西处理一下：${audit.proposal?.title ?? '这份素材'}。\n\n${trigger.text}`, `observed-${decision.id}`)
-      store.set(KV.observed.acted, [...(store.get(KV.observed.acted) ?? []), decision.id].slice(-200))
+      // Approving an observation turns it into the person's own request on a thread of its own, so an open ticket in
+      // the conversation cannot swallow it as a follow-up.
+      runtime.approveObserved(decision.id)
       return { sent: true as const }
     },
     'POST chat': async ({ body }) => {

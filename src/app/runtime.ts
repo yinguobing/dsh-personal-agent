@@ -244,6 +244,23 @@ export class Runtime extends Service implements SourceHost {
     await this.ctx.sessionController.prompt({ requestId: requestId as never, sessionId: this.masterId as SessionId, mode: 'queue',
       content: [{ type: 'text', text }] }, this.lifetime)
   }
+  /**
+   * Turns a recorded observation the person approved into a request of their own on a thread of its own. A new thread
+   * matters: the conversation's thread is followed by every open ticket there, and an approval that joined it would be
+   * swallowed by an unrelated ticket instead of opening the work the person just asked for.
+   */
+  approveObserved(decisionId: string): void {
+    const decision = this.store.decisions.get(decisionId)
+    const audit = (decision?.audit ?? {}) as { would_accept?: boolean; proposal?: { title?: string } }
+    const source = this.store.triggers.get(decision?.triggerIds[0] ?? '')
+    if (!decision || audit.would_accept !== true || !source) throw new Error('Not an observed proposal')
+    this.store.set(KV.observed.acted, [...(this.store.get(KV.observed.acted) ?? []), decisionId].slice(-200))
+    this.engine.receive({ id: key('observed-approval', decisionId), source: 'chat',
+      threads: [{ source: 'chat', id: `approval:${decisionId}` }], actor: { source: 'chat', id: 'owner' }, human: true,
+      addressed: 'direct', at: new Date().toISOString(),
+      text: `把素材夹里的这份东西处理一下：${audit.proposal?.title ?? '这份素材'}。\n\n${source.text}`, meta: { approval: decisionId } })
+    this.passes.request()
+  }
   ticketEnvironment(ticket: Ticket): Variable[] {
     const trigger = sourceTrigger(this, ticket)
     const { setup: { deployment }, sources } = this
@@ -300,7 +317,8 @@ export class Runtime extends Service implements SourceHost {
       get setupProblem() { return setup.problem }, get feishuProblem() { return setup.feishuProblem },
       configured: () => setup.configured(), links: () => runtime.links(), ticketEnvironment: ticket => runtime.ticketEnvironment(ticket),
       checkSetup: () => { setup.check() }, requestPass: () => { passes.request() }, models: () => this.ctx.sessionController.modelCatalog(),
-      chat: limit => runtime.chat(limit), say: (text, requestId) => runtime.say(text, requestId) }
+      chat: limit => runtime.chat(limit), say: (text, requestId) => runtime.say(text, requestId),
+      approveObserved: id => runtime.approveObserved(id) }
   }
   /** Idempotent stop; concurrent or repeated calls share the same shutdown promise. */
   stop(): Promise<void> { return this.stopping ??= this.shutdown() }
