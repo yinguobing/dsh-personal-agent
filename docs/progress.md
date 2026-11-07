@@ -53,3 +53,23 @@
 
 - `chat` 没有 outbound Channel：结果通过 notice 回到主会话，由 Router 转述；真正的「回复到某个渠道」要等微信接入。
 - 主会话里用户消息与候选卡会同时出现，Router 需要把候选卡当成同一条消息的登记，而不是另起一件事。提示词重写时解决。
+
+## 2026-11-07 · P0-c：把提示词从「仓库维护工」改成「个人助理」
+
+### 做了什么
+
+- `prompts/orchestrator.md` 重写：开篇从 "assess and route requests for the deployment's repository" 改成「这台机器主人的助理，一个人、一段对话、他交办的事」；并明确写进一句：同一条消息也会以候选卡出现，**卡是这条消息进入工作队列的登记，不是第二个请求**，只受理一次。
+- `prompts/shared.md`：去掉 implementation 措辞，改成中性表述。
+- `prompts/worker.md`：GitHub 相关句子改成条件句（「当这台机器有 GitHub 账号时」），目录说明从「读仓库 AGENTS.md」改成「读你工作目录里的说明」。
+- GitHub 技能改为按部署有无账号加载（此前无条件加载，个人版会一直看到 gh/PR 教程）。
+
+### 验证
+
+- 隔离 profile 里取 `/orchestrator/api/prompts`，拼出的 Router prompt 首段确认是新文案，且包含「not a second request」。
+- 执行环境变量里 `DSH_SUPERAGENT_GITHUB_ACCOUNT` 不再出现。
+- 新增 2 条测试：无 GitHub 账号时不注册 github 技能；Router 提示词必须包含「卡即同一条消息」的规则。
+- 全量测试 1207/1208 通过（仍只有上游那条飞书用例失败）。
+
+### 遗留
+
+- `prompts/admission.md` 与 `prompts/work.md` 仍是编码口径（「仓库内的小改动」、PR/评审流程）。这两处决定的是**主动候选项的边界**和**worker 的干活方式**，属于 P2/P3，等内容场景定下来再改。

@@ -124,6 +124,21 @@ it('registers the built-in Source skills, Feishu only with a Feishu bot, before 
 })
 
 
+it('leaves the GitHub skill out when the installation has no GitHub account', () => {
+  withStore(store => {
+    const skills = new Prompts(store, () => 100000, variables, () => false, () => false).skills(defaultPrompts())
+    expect(skills.map(([name]) => name)).toEqual([])
+  })
+})
+
+it('tells the router that a message and its candidate card are one request, not two', () => {
+  withStore(store => {
+    const main = promptsOf(store).compose(defaultPrompts(), 'orchestrator')
+    expect(main).toContain('the card is how that same message enters the work queue, not a second request')
+    expect(main).toContain('You are the assistant of the person who owns this installation')
+  })
+})
+
 describe('overrides of built-in parts', () => {
   const settings = () => SettingsSchema.parse({})
   const config = (overrides: PromptConfig['overrides']) => ({ ...defaultPrompts(), overrides })
