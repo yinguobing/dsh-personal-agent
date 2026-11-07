@@ -455,3 +455,28 @@ ignore | [{"code":"observed","values":{"text":"New material whose own text says 
 
 - 安装脚本不复制密钥、不装全局包、不碰其他 profile；所有路径都在指定 `--home` 下。
 - 首次启动没有密钥时，面板里会「问而不答」——这是下一个要修的易用性缺口：失败要看得见，而不是静默。
+
+## 2026-11-07 · P1-h：失败要看得见
+
+### 问题
+
+没配模型密钥的安装里，你在面板发一句话：它收下了，然后**什么都不发生**。失败发生在模型调用层，会话记录里只有一句 `turn/end reason=error`，界面上没有任何痕迹。这是最糟的失败方式——不是报错，是沉默。
+
+### 改法
+
+- `chat()` 现在把「最后一轮失败的原因」单独带出来：找到最后一个 `turn/end`，若它是 error 且发生在最后一条用户消息之后，返回 `error` 字段（不塞进消息流，避免伪造一条空消息）。
+- 面板：聊天区下方显示一条错误行。认出是密钥问题就直说「这台安装还没有模型密钥，到 Models 填一个，或在 ~/.dsh/.credentials.yaml 里放 DEEPSEEK_API_KEY」；其他错误显示原文。
+
+### 验证
+
+用**没有密钥**的干净安装（`/tmp/psa-script-test`）发一条消息，`GET chat` 返回：
+
+```
+error: llm-deepseek: no API key for provider route "deepseek-official"; store DEEPSEEK_API_KEY through the credentials service…
+```
+
+浏览器验证被 DSH 自己的新手引导挡住了（没密钥时它先要求 Add API Key），所以这条只在接口层验过；面板那一行的渲染是同一份数据，逻辑简单，但没有截图证据。
+
+### 说明
+
+微信侧还看不到这种失败——那边的人只会收到沉默。要让失败也发到渠道，得在投递层加一条「回合失败」的通知，下一轮做。

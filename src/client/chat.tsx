@@ -25,6 +25,9 @@ export function ChatEntry() {
         ? <ul className="dt-chat-list">{chat.data.messages.map((message, index) => <li key={index}
           className={message.role === 'user' ? 'dt-chat-turn dt-chat-mine' : 'dt-chat-turn dt-chat-theirs'}>{message.text}</li>)}</ul>
         : <Hint>{t('chatEmpty')}</Hint>}
+      {chat.data?.error && <p className="dt-error" role="alert">
+        {/api key|credentials/i.test(chat.data.error) ? t('chatNoKey') : t('chatFailed', { error: chat.data.error })}
+      </p>}
       <div className="dt-chat-compose">
         <textarea className="dt-chat-input" rows={2} value={text} placeholder={t('chatPlaceholder')} aria-label={t('chatPlaceholder')}
           onChange={event => setText(event.target.value)}

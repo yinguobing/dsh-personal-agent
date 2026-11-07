@@ -57,8 +57,8 @@ export interface HttpHost {
   checkSetup(): void
   requestPass(): void
   models(): Promise<ModelCatalog>
-  /** The last turns of the person's conversation, oldest first. */
-  chat(limit: number): ChatMessage[]
+  /** The last turns of the person's conversation, oldest first, and why the latest turn failed when it did. */
+  chat(limit: number): { messages: ChatMessage[]; error?: string }
   /** Delivers one message to the person's conversation, as if they had written it in the DSH chat. */
   say(text: string, requestId: string): Promise<void>
 }
@@ -215,7 +215,7 @@ function routes(runtime: HttpHost): Routes {
     'POST policy-sync/:id': async ({ params }) => ({ policy: await runtime.settings.sync(params.id) }),
     'POST setup/check': () => { runtime.checkSetup(); return { restarting: true } },
     'GET models': () => runtime.models(),
-    'GET chat': ({ query }) => ({ messages: runtime.chat(ChatQuery.parse(query).limit) }),
+    'GET chat': ({ query }) => runtime.chat(ChatQuery.parse(query).limit),
     'GET observed': ({ query }) => observedList(views(runtime), ObservedQuery.parse(query).limit),
     'POST observed/:id/act': async ({ params }) => {
       const decision = store.decisions.get(params.id)

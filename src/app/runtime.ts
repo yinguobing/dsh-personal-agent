@@ -209,7 +209,7 @@ export class Runtime extends Service implements SourceHost {
     return channel => this.sources.link(channel, links)
   }
   /** The last turns of the person's conversation: their own messages and the agent's answers, without notices or relays. */
-  chat(limit = 30): { role: 'user' | 'assistant'; text: string; at: string }[] {
+  chat(limit = 30): { messages: { role: 'user' | 'assistant'; text: string; at: string }[]; error?: string } {
     const agent = this.ctx.agents.get(this.masterId as SessionId)
     const messages: { role: 'user' | 'assistant'; text: string; at: string }[] = []
     for (const event of agent?.session.snapshotEvents() ?? []) {
@@ -221,7 +221,14 @@ export class Runtime extends Service implements SourceHost {
       if (!text) continue
       messages.push({ role: event.type === 'user/message' ? 'user' : 'assistant', text, at: new Date(event.time).toISOString() })
     }
-    return messages.slice(-limit)
+    // A turn that failed leaves the person's message unanswered with no trace in the transcript; report its reason
+    // separately, so the panel can say why instead of showing silence.
+    const lastUser = messages.filter(message => message.role === 'user').at(-1)
+    const end = (agent?.session.snapshotEvents() ?? []).filter(event => event.type === 'turn/end').at(-1)
+    const reason = end?.type === 'turn/end' ? (end.data as { reason?: { kind?: string; error?: { message?: string } } }).reason : undefined
+    const error = lastUser && end && reason?.kind === 'error' && end.time >= Date.parse(lastUser.at)
+      ? reason.error?.message ?? 'The turn failed' : undefined
+    return { messages: messages.slice(-limit), ...(error ? { error } : {}) }
   }
   /**
    * Delivers one message to the main Session as the person's own, through the same path the DSH chat uses, so the
