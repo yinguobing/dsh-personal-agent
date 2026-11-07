@@ -5,7 +5,7 @@
 > We have adapted it for publication, so it is not identical to our internal version or the implementation described in *Exploring Super-agent Design: Towards a More Autonomous Agent System*. Some designs discussed in the article are directions for future development and are not implemented in this prototype.
 
 This fork keeps the prototype's architecture and turns it into a personal agent for one person, published as
-`dsh-personal-agent`. The package name is the only renamed identifier: plugin ids, the `orchestrator` service and the
+`dsh-personal-agent`: https://github.com/yinguobing/dsh-personal-agent The package name is the only renamed identifier: plugin ids, the `orchestrator` service and the
 `orchestrator_*` tools still carry the prototype's names, so `git diff` against upstream stays readable.
 
 dsh-superagent is a proactive coding agent for one GitHub repository, packaged as a bundle for [DeepSeek Harness](https://www.deepseek.com/en/harness/). It listens to GitHub and, optionally, Feishu. When someone allowed asks the agent for work, it opens a work item, works on it in its own agent session and directory, and answers in the original conversation, for example with a pull request. A web panel shows what needs a person.
@@ -15,12 +15,24 @@ It is also a way of working with an agent: **take as little human attention as p
 ## Install it as a personal agent
 
 This fork turns the prototype into a personal agent for one person: talk to it in the panel or on WeChat, drop material
-into a folder it watches, and it opens a work item only when you ask or a rule allows it. One command installs it into
-its own DSH profile:
+into a folder it watches, and it opens a work item only when you ask or a rule allows it.
+
+From a clone, one command installs it into its own DSH profile and writes the settings it needs:
 
 ```sh
 node scripts/install.mjs --profile personal --port 3082
 ```
+
+From the release tarball, install the package and write that configuration yourself; `examples/profile.cordis.patch.yml`
+is the configuration the script would have written:
+
+```sh
+dsh plugin --profile personal add \
+  https://github.com/yinguobing/dsh-personal-agent/releases/download/v0.1.0/dsh-personal-agent-0.1.0.tgz
+```
+
+Installing straight from git is not supported: the build output is not committed, and pnpm asks for a per-commit
+approval before it runs the build.
 
 It creates the profile from the shipped web template, installs this bundle, writes the settings the agent needs
 (including worker permissions that never wait for an approval), and prints the command that starts it and where its
