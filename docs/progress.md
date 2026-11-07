@@ -431,3 +431,27 @@ ignore | [{"code":"observed","values":{"text":"New material whose own text says 
 ### 结论
 
 同一套「素材 → 票据 → worker → 交付」在内容写作和办事类任务上都成立，没有为第二个场景加任何特判。这是 P4 想要的答案。
+
+## 2026-11-07 · P0-h：一条命令装好
+
+### 做了什么
+
+`scripts/install.mjs`：从官方 web 模板建 profile → 装本 bundle → 写配置（端口、stateDir、关掉 github/feishu/weixin、**worker 权限预设**）→ 打印启动命令与素材夹路径。
+
+关键点：
+- 用 `--from-default-profile web` 继承 base 与 web-app，不必再手动补 `dsh-web-app`；
+- 权限预设写进 profile 层（bundle 无法合并），`workspace-write` 的 approval 设为 `never`，并显式 `defaultPreset`——上一轮踩过的坑在这里一次配好；
+- 模型密钥是唯一装不了的东西。检测 `$DSH_HOME/.credentials.yaml` 里有没有 `DEEPSEEK_API_KEY`，没有就明确提示，并在默认 home 有密钥时给出可直接复制的 `cp` 命令。
+
+### 验证（全新 DSH_HOME）
+
+1. `node scripts/install.mjs --profile personal --port 3086 --home /tmp/psa-script-test3` 跑完无错；
+2. 按提示 `cp ~/.dsh/.credentials.yaml` 过去；
+3. 启动 → 面板 `/orchestrator/api/state`：runtime ready、chat ready、inbox `Watching inbox (1 files)`；
+4. 面板对话发「你好，这是新装的一份…」→ 20 秒内收到回复；
+5. 往 inbox 丢一份《装修清单》→ 它判断「家务清单，不指向写作或任务，也没有日期」，**静默记录、不开票**——规则生效，而不是见啥都做。
+
+### 说明
+
+- 安装脚本不复制密钥、不装全局包、不碰其他 profile；所有路径都在指定 `--home` 下。
+- 首次启动没有密钥时，面板里会「问而不答」——这是下一个要修的易用性缺口：失败要看得见，而不是静默。
