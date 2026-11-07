@@ -13,7 +13,7 @@ import type {} from '@deepseek-ai/dsh-subprocess'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { lockSync } from 'proper-lockfile'
-import { Engine, key, reasonText, type EngineForSettings, type ReceiveResult, type Ticket, type Trigger } from '../core/index.ts'
+import { Engine, key, reasonText, type ChannelRef, type EngineForSettings, type ReceiveResult, type Ticket, type Trigger } from '../core/index.ts'
 import { allowedSender, policyVersion, settingsPolicy } from '../policy.ts'
 import { SourceRegistry } from '../sources/registry.ts'
 import { Commands } from '../infra/commands.ts'
@@ -83,6 +83,8 @@ export class Runtime extends Service implements SourceHost {
   private stopping?: Promise<void>
   private readonly sourceDeps: SourceContextDeps
   private readonly toolHost: MainToolsHost & ExecutorToolsHost
+  /** The last message that came in through a Channel, so a failed turn can say so where it was asked. */
+  private lastChannel?: { channel: ChannelRef; at: number }
   /** Non-zero while a main-Session tool is executing an Engine command, suppressing self-triggered domain event notices. */
   private quiet = 0
   constructor(ctx: Context, readonly machine: Machine, restart: () => void) {
@@ -157,6 +159,10 @@ export class Runtime extends Service implements SourceHost {
           if (notice) sessions.notify(...notice)
           // A person's message that reached an open ticket is the ticket's; the main Session hears of it in the same transaction,
           // and of one for an ended ticket once it resumes, unless it routed the message there itself.
+          if (event.type === 'trigger.received') {
+            const trigger = store.triggers.get(event.data.triggerId)
+            if (trigger?.channel) this.lastChannel = { channel: trigger.channel, at: Date.now() }
+          }
           const followed = !this.quiet && (event.type === 'trigger.received' || event.type === 'ticket.resumed' || event.type === 'trigger.followup')
           const followup = followed ? followupNotice(store, sources, event.data.triggerId) : undefined
           if (followup) sessions.relay(followup.id, followup.text)
@@ -259,6 +265,21 @@ export class Runtime extends Service implements SourceHost {
       return
     }
     this.sessions.install()
+    // A turn that failed leaves the person's message unanswered. Say so where it came from, so a conversation on a
+    // phone is not left silent; the panel reads the same failure from `chat`.
+    this.ctx.on('session/event', (session, event) => {
+      if (session.id !== this.masterId || event.type !== 'turn/end') return
+      const reason = (event.data as { reason?: { kind?: string; error?: { message?: string } } }).reason
+      if (reason?.kind !== 'error') return
+      const recent = this.lastChannel
+      if (!recent || Date.now() - recent.at > 5 * 60_000) return
+      const raw = reason.error?.message ?? 'unknown error'
+      // Name the failure in the person's terms when it is a common one; otherwise quote it short.
+      const detail = /api key|credentials/i.test(raw) ? '这台安装还没有模型密钥'
+        : raw.replace(/\s+/g, ' ').slice(0, 80)
+      this.outbox.send({ id: key('turn-error', this.masterId, String(event.time)), channel: recent.channel,
+        text: `刚才那条消息没能处理完：${detail}。可以稍后再发一次。`, kind: 'notice' })
+    })
     this.executor.install()
     await this.sessions.ensure(this.masterId, this.machine.stateDir, 'dsh-superagent orchestrator', 'orchestrator')
     // The person has one conversation; pin it ahead of the workers' sessions, which are plumbing they never open.
