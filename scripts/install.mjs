@@ -21,6 +21,8 @@ const profile = option('profile', 'personal')
 const port = Number(option('port', '3082'))
 const home = resolve(option('home', process.env.DSH_HOME || join(homedir(), '.dsh')))
 const bundle = option('bundle', here)
+const withMemory = !args.includes('--no-memory')
+const MEMORY = 'https://github.com/yinguobing/dsh-memory-index/releases/download/v0.1.0/dsh-memory-index-0.1.0.tgz'
 const dsh = process.env.DSH_BIN || 'dsh'
 const run = (argv) => execFileSync(dsh, argv, { stdio: 'inherit', env: { ...process.env, DSH_HOME: home } })
 
@@ -45,7 +47,16 @@ const spec = bundle.startsWith('.') || bundle.startsWith('/') ? `file:${resolve(
 console.log(`Installing ${spec} into profile ${profile}...`)
 run(['plugin', '--profile', profile, 'add', spec])
 
-// 3. The settings the bundle needs: a state directory, the panel port, and worker permissions that do not wait for
+// 3. Memory: the agent keeps MEMORY.md and memory/ in its state directory. Until DSH has its own, this plugin is it.
+if (withMemory) {
+  // The memory plugin resolves its workspace at load time, before the agent creates it.
+  mkdirSync(join(home, 'state', 'superagent', 'memory'), { recursive: true })
+  console.log('Installing dsh-memory-index for long-term memory...')
+  try { run(['plugin', '--profile', profile, 'add', MEMORY]) }
+  catch { console.log('Could not install dsh-memory-index; continue without memory (--no-memory to skip next time).') }
+}
+
+// 4. The settings the bundle needs: a state directory, the panel port, and worker permissions that do not wait for
 //    an approval nobody can give.
 const existing = existsSync(patch) ? readFileSync(patch, 'utf8') : ''
 const configured = existing.split('\n').some(line => /^\s*-\s+id:\s*dsh-superagent\s*$/.test(line))
@@ -64,6 +75,13 @@ if (configured) {
     `  config:`,
     `    stateDir: ${JSON.stringify(join(home, 'state', 'superagent'))}`,
     `    digestHour: 8`,
+    `- id: memory-index`,
+    `  config:`,
+    `    workspace: ${JSON.stringify(join(home, 'state', 'superagent'))}`,
+    `    writeMode: readwrite`,
+    `    autoRecall: startup`,
+    `    buildOnStart: true`,
+    `    timeZone: ${JSON.stringify(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')}`,
     `- id: dsh-superagent-github`,
     `  disabled: true`,
     `- id: dsh-superagent-feishu`,
@@ -89,7 +107,7 @@ if (configured) {
   console.log(`Wrote ${patch}.`)
 }
 
-// 4. A model provider is the one thing the installer cannot arrange: without a key every turn fails, and the panel
+// 5. A model provider is the one thing the installer cannot arrange: without a key every turn fails, and the panel
 //    shows the question but never the answer.
 const credentials = join(home, '.credentials.yaml')
 const hasKey = existsSync(credentials) && readFileSync(credentials, 'utf8').includes('DEEPSEEK_API_KEY')

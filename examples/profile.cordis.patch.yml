@@ -7,6 +7,14 @@
 - id: dsh-superagent
   config:
     stateDir: <absolute path, for example /home/me/.dsh/state/superagent>
+# Long-term memory: MEMORY.md and memory/ under the state directory. dsh-memory-index must be installed as a bundle.
+# - id: memory-index
+#   config:
+#     workspace: <the stateDir above>
+#     writeMode: readwrite
+#     autoRecall: startup
+#     buildOnStart: true
+#     timeZone: Asia/Shanghai
 # Feishu is optional: uncomment to enable its Source, then set the bot's lark-cli on the Feishu Source.
 # - id: dsh-superagent-feishu
 #   disabled: false

@@ -28,19 +28,19 @@ is the configuration the script would have written:
 
 ```sh
 dsh plugin --profile personal add \
-  https://github.com/yinguobing/dsh-personal-agent/releases/download/v0.1.0/dsh-personal-agent-0.1.0.tgz
+  https://github.com/yinguobing/dsh-personal-agent/releases/download/v0.2.0/dsh-personal-agent-0.2.0.tgz
 ```
 
 Installing straight from git is not supported: the build output is not committed, and pnpm asks for a per-commit
 approval before it runs the build.
 
-It creates the profile from the shipped web template, installs this bundle, writes the settings the agent needs
-(including worker permissions that never wait for an approval), and prints the command that starts it and where its
-material folder is. It cannot supply a model key: without `DEEPSEEK_API_KEY` in `<home>/.credentials.yaml` every turn
+It creates the profile from the shipped web template, installs this bundle and the memory index, writes the settings
+the agent needs (including worker permissions that never wait for an approval), and prints the command that starts it
+and where its material folder is. Pass `--no-memory` to install without long-term memory. It cannot supply a model key: without `DEEPSEEK_API_KEY` in `<home>/.credentials.yaml` every turn
 fails, and the installer says so.
 
-Then read [docs/using.md](docs/using.md) for the first five minutes, and [docs/known-gaps.md](docs/known-gaps.md) for
-what is not yet solid. If something does not work, the gaps list is the honest inventory of where to look first.
+Then read [docs/using.md](docs/using.md) for the first five minutes, [docs/memory.md](docs/memory.md) for how it
+remembers things, and [docs/known-gaps.md](docs/known-gaps.md) for what is not yet solid. If something does not work, the gaps list is the honest inventory of where to look first.
 
 ## Setup
 
