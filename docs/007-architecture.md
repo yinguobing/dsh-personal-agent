@@ -316,6 +316,7 @@ Some generic modules still refer directly to GitHub or Feishu:
 | `src/app/runtime.ts` | The Runtime, the composition root, with its start and stop |
 | `src/app/setup.ts` | Setup, and `setupChanged`, whether a save changes a field setup reads |
 | `src/app/passes.ts` | Passes, the pass scheduler |
+| `src/app/digest.ts` | The daily digest: counts of waiting, working and finished tickets, silent unless one is nonzero, sent once in the configured hour |
 | `src/app/outbox.ts` | The Outbox: the Engine's `Outbox` port, the receipts and the `reply` effects that send them |
 | `src/app/notices.ts` | The main Session's notices and relays: `eventNotice`, `reportRelay`, `resultRelay` and `followupRelay` |
 | `src/app/store.ts` | The Store, and `Receipt`, a message of the outbox |
@@ -409,6 +410,7 @@ Some generic modules still refer directly to GitHub or Feishu:
 | `tests/policy.spec.ts` | Source scope, the gate, the admission table, Mandate revalidation, the Policy version, settings migrations and assessment outcomes |
 | `tests/registry.spec.ts` | `SourceRegistry`: instances, validation, Policy parts, Channels and Thread context |
 | `tests/sources.spec.ts` | The Feishu and GitHub Sources on a `SourceContext`: translation, polls and read positions, the pull request rules, health |
+| `tests/digest.spec.ts` | The daily digest: counts, silence when empty, one send per day in the configured hour, retry after a failed send |
 | `tests/chat.spec.ts` | The Conversation Source: Trigger shape and identity, owner detection against relays, the default owner policy, and one message becoming one explicit Eval |
 | `tests/commands.spec.ts` | CLI calls as the deployment's accounts, the Channels' answers, and repository-scoped GitHub calls |
 | `tests/feishu-read.spec.ts`, `tests/github-read.spec.ts` | Feishu and GitHub reads |

@@ -10,6 +10,8 @@ export interface PassesHost {
   readonly lifetime: AbortSignal
   configured(): boolean
   closing(): boolean
+  /** The daily digest, checked by each pass. */
+  digest?(): void
 }
 
 const now = (): string => new Date().toISOString()
@@ -65,5 +67,6 @@ export class Passes {
     if (this.host.closing()) return
     // While processing is paused, the Engine only records the pause on active Evals so they do not expire.
     this.host.engine.evaluateDue()
+    this.host.digest?.()
   }
 }

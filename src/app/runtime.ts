@@ -38,6 +38,7 @@ import { HealthBoard } from '../infra/health.ts'
 import { Outbox } from './outbox.ts'
 import { Passes } from './passes.ts'
 import { Setup } from './setup.ts'
+import { Digest } from './digest.ts'
 import { feishuSettings } from '../sources/feishu.ts'
 import { health, type Health, type SourceContext, type SourceHost } from '../sources/host.ts'
 import { Sessions } from './sessions.ts'
@@ -169,8 +170,12 @@ export class Runtime extends Service implements SourceHost {
       // Update the `evals` health entry on every pass if an evaluation failed as unavailable within the last hour.
       const evals = board.claim('evals', { state: 'ready', detail: 'No unavailable Eval in the last hour' })
       const evaluateDue = () => { engine.evaluateDue(); evals.set(evalsHealth(store)) }
+      const digest = new Digest({ tickets: () => store.tickets.list(), hour: () => machine.digestHour.get(), now: () => new Date(),
+        closing: () => this.closing(), speak: async (id, text) => { await sessions.prompt(masterId, id, text, 'queue') },
+        lastSent: () => store.get(KV.runtime.digestDay), markSent: day => { store.set(KV.runtime.digestDay, day || undefined) } })
       const passes = this.passes = new Passes({ engine: { receive: trigger => engine.receive(trigger), evaluateDue }, effects,
-        health: this.runtimeHealth, lifetime: this.lifetime, configured: () => setup.configured(), closing: () => this.closing() })
+        health: this.runtimeHealth, lifetime: this.lifetime, configured: () => setup.configured(), closing: () => this.closing(),
+        digest: () => digest.tick() })
       this.sourceDeps = { store, engine, outbox, commands, sources, masterId, get ready() { return runtime.ready },
         get deployment() { return setup.deployment }, configured: () => setup.configured(),
         get setupProblem() { return setup.problem }, get feishuProblem() { return setup.feishuProblem }, receive: trigger => passes.receive(trigger) }
