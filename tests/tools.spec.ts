@@ -247,12 +247,16 @@ it('ignores a proactive candidate from its card beside other decisions, marked s
 })
 
 it('returns where a reply stands: sent, or dropped when its conversation can no longer receive it', async () => {
-  const { ticket, sessionId } = await h.acceptedTicket(feishu('1', '@bot 修一下回归'))
-  await h.runTool(sessionId, 'orchestrator_report', { state: 'ready', summary: 'Done.' })
-  const reply = (text: string) => h.runTool(h.runtime.masterId, 'orchestrator_reply', { ticket_id: ticket.id, purpose: 'result', text })
-  expect(await reply('修好了。')).toEqual({ status: 'sent' })
+  const first = await h.acceptedTicket(feishu('1', '@bot 修一下回归'))
+  await h.runTool(first.sessionId, 'orchestrator_report', { state: 'ready', summary: 'Done.' })
+  expect(await h.runTool(h.runtime.masterId, 'orchestrator_reply', { ticket_id: first.ticket.id, purpose: 'result', text: '修好了。' }))
+    .toEqual({ status: 'sent' })
+  // The host queues a result where the ticket started; when that conversation is gone, the message is dropped and says so.
+  const second = await h.acceptedTicket(feishu('2', '@bot 再修一次'))
   vi.mocked(Commands.prototype.lark).mockRejectedValue(new CliError('the message was withdrawn', 230011))
-  expect(await reply('修好了，请看 PR。')).toEqual({ status: 'dropped', note: expect.stringContaining('no reply transport') })
+  await h.runTool(second.sessionId, 'orchestrator_report', { state: 'ready', summary: 'Done.' })
+  expect(await h.runTool(h.runtime.masterId, 'orchestrator_reply', { ticket_id: second.ticket.id, purpose: 'result', text: '修好了，请看 PR。' }))
+    .toEqual({ status: 'dropped', note: expect.stringContaining('no reply transport') })
 })
 
 it('checks an acknowledgement against the IM word limit, not a character count', async () => {

@@ -43,6 +43,7 @@ export function weixinTrigger(message: WeixinMessage, person: string, at: string
   const text = weixinText(message)
   return { id: key(SOURCE, String(message.from_user_id ?? ''), String(message.create_time ?? at)), source: SOURCE,
     threads: [{ source: SOURCE, id: person }], actor: { source: SOURCE, id: OWNER }, human: true, addressed: 'direct', at, text,
+    channel: { source: SOURCE, thread: person, address: { person, ...(message.context_token ? { contextToken: message.context_token } : {}) } },
     meta: { person, ...(message.context_token ? { contextToken: message.context_token } : {}) } }
 }
 

@@ -43,6 +43,34 @@ export class Replies extends EnginePart {
   acknowledgeAccepted(ticketId: string, trigger: Trigger, text: string): void {
     if (trigger.channel && trigger.human) this.options.outbox.send({ id: key('ack', trigger.id), channel: trigger.channel, text, kind: 'acknowledgement', ticketId })
   }
+  /**
+   * Queue a ticket's question for a person where the ticket started, without asking the main Session first, and do nothing
+   * when that conversation has no Channel (the personal conversation reads the question in its own Session). The question
+   * reaches the person even when the main Session decides to say nothing, and the id keeps a later reply from repeating it.
+   */
+  announceAttention(ticketId: string, text: string): void {
+    const ticket = this.repo.tickets.get(ticketId)
+    const attention = ticket?.attention
+    const asker = attention?.triggerId ? this.repo.triggers.get(attention.triggerId) : undefined
+    const channel = asker?.channel ?? (ticket ? this.sourceChannel(ticket) : undefined)
+    if (!channel || !attention) return
+    const id = key('attention-reply', attention.id)
+    if (this.options.outbox.status(id)) return
+    this.options.outbox.send({ id, channel, text, kind: 'reply', ticketId })
+  }
+  /**
+   * Queue a ticket's result where the ticket started, once, without waiting for the main Session. A ticket whose
+   * conversation has no Channel (the personal conversation) is left to that Session, which speaks there itself.
+   */
+  announceResult(ticketId: string, text: string): void {
+    const ticket = this.repo.tickets.get(ticketId)
+    const channel = ticket && this.sourceChannel(ticket)
+    if (!channel || !ticket) return
+    const id = key('result-auto', ticketId)
+    if (this.options.outbox.status(id)) return
+    const capped = text.length > 800 ? `${text.slice(0, 800)}…` : text
+    this.options.outbox.send({ id, channel, text: capped, kind: 'reply', ticketId })
+  }
   /** Withdraw a ticket's question for a person from the outbox, unless it went out already. */
   withdrawAttention(attentionId: string): void { this.options.outbox.withdraw(key('attention-reply', attentionId)) }
   private acknowledge(request: Extract<ReplyRequest, { purpose: 'acknowledgement' }>): Reply {
@@ -76,7 +104,10 @@ export class Replies extends EnginePart {
     // Attention replies must match the ticket's currently open question text.
     if (request.purpose === 'attention' && (!attention || attention.question !== request.question)) throw new UserError('notAttention')
     if (request.purpose === 'answer' && !trigger?.human) throw new UserError('notQuestion')
-    const id = attention ? key('attention-reply', attention.id) : key('reply', trigger?.id ?? ticket?.id ?? '', request.text)
+    // A result the host already queued where the ticket started keeps its id, so this reply validates as usual and sends nothing twice.
+    const auto = request.purpose === 'result' && ticket ? key('result-auto', ticket.id) : undefined
+    const id = auto && this.options.outbox.status(auto) ? auto
+      : attention ? key('attention-reply', attention.id) : key('reply', trigger?.id ?? ticket?.id ?? '', request.text)
     const existing = this.options.outbox.status(id)
     const ready = !ticket || !trigger || ticket.answers?.includes(trigger.id)
     if (request.purpose === 'answer' && !ready && !existing) throw new UserError('noAnswer')

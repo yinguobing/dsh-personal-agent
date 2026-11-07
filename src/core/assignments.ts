@@ -125,11 +125,17 @@ export class Assignments extends EnginePart {
     if (report.answers) this.takeUp(ticketId, report.answers)
     if (report.state === 'blocked' || report.state === 'failed') ticket.undelivered = ticket.undelivered.filter(id => !automatic(ticket.inputs.find(input => input.id === id)))
     this.repo.tickets.save(ticket)
+    // A question blocks the work: send it where the ticket started, so a person on a phone hears it without a main Session relay.
+    if (attention && attention.id !== previous?.id) this.replies.announceAttention(ticketId, attention.question)
     // A ticket that follows Threads ends with them: a ready report ends it only once followsDone holds, with that outcome.
     const ready = !ticket.follows?.length ? 'completed' : this.tickets.followsDone(ticket)?.outcome
     // A dropped report after a close the ticket deferred ends it as the close did, which its final notice tells.
     const outcome = report.state === 'dropped' ? this.tickets.followsDone(ticket)?.outcome ?? 'dropped' : report.state === 'ready' ? ready : undefined
-    if (outcome) this.tickets.end(ticketId, 'executor', outcome, at)
+    if (outcome) {
+      this.tickets.end(ticketId, 'executor', outcome, at)
+      // Send the result where the ticket started; a ticket with no Channel is answered in its own conversation.
+      if (report.state !== 'dropped') this.replies.announceResult(ticketId, report.summary)
+    }
     return this.require(ticketId)
   }
   /** The ticket, while it is open and `assignmentId` runs it. */

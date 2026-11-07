@@ -19,6 +19,7 @@ describe('the Weixin Source', () => {
     expect(trigger).toMatchObject({ source: 'weixin', actor: { source: 'weixin', id: 'owner' }, human: true, addressed: 'direct',
       text: '帮我写一段介绍', meta: { person: 'u1', contextToken: 'ctx1' } })
     expect(trigger.threads).toEqual([{ source: 'weixin', id: 'u1' }])
+    expect(trigger.channel).toEqual({ source: 'weixin', thread: 'u1', address: { person: 'u1', contextToken: 'ctx1' } })
     expect(weixinTrigger(message, 'u1', '2026-11-07T04:00:00.000Z').id).toBe(trigger.id)
   })
 })

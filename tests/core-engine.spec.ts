@@ -792,6 +792,23 @@ describe('worker reports', () => {
     expect(cleared).not.toHaveProperty('attention')
     expect(h.withdrawn).toEqual([key('attention-reply', asked.attention!.id), key('attention-reply', replaced.attention!.id)])
   })
+  it('delivers a question and a result where the ticket started, and nothing for a conversation with no Channel', () => {
+    const h = harness()
+    const ticketId = accepted(h).ticketId!
+    h.engine.report(ticketId, { state: 'progress', summary: 'need', question: 'Which color?' })
+    expect(h.outbox.some(item => item.kind === 'reply' && item.text === 'Which color?')).toBe(true)
+    h.engine.report(ticketId, { state: 'ready', summary: 'Done' })
+    expect(h.outbox.some(item => item.kind === 'reply' && item.text === 'Done')).toBe(true)
+
+    // The personal conversation has no Channel: the host leaves the message to that Session.
+    const plain = harness()
+    plain.engine.receive(trigger('7', { channel: undefined })); plain.pump()
+    const decision = plain.decide(plain.requests.at(-1)!, { kind: 'accept', title: 'Fix', scope: 'small', reason: 'asked', acknowledgement: 'ok' })
+    plain.settle()
+    plain.engine.report(decision.ticketId!, { state: 'progress', summary: 'need', question: 'Which color?' })
+    plain.engine.report(decision.ticketId!, { state: 'ready', summary: 'Done' })
+    expect(plain.outbox.filter(item => item.kind === 'reply')).toEqual([])
+  })
   it('treats a person\'s next message on the ticket as answering its pending question', () => {
     const h = harness()
     const ticketId = accepted(h).ticketId!
@@ -1050,12 +1067,14 @@ describe('replies', () => {
     expect(() => h.engine.reply({ purpose: 'attention', ticketId: quiet, text: 'Anything to send.' })).toThrow(new UserError('notAttention'))
     expect(() => h.engine.reply({ purpose: 'attention', ticketId: quiet, question: '', text: 'Anything to send.' })).toThrow(new UserError('notAttention'))
     const attention = h.repo.tickets.get(ticketId)!.attention!
-    expect(h.engine.reply({ purpose: 'attention', ticketId, question: 'Which color?', text: 'Which color?' }).id).toBe(key('attention-reply', attention.id))
-    // A question goes where the message that raised it was written.
-    expect(h.outbox.at(-1)!.channel).toEqual(asked.channel)
+    // The host already queued the question where the ticket started; an explicit reply reuses that message.
+    expect(h.engine.reply({ purpose: 'attention', ticketId, question: 'Which color?', text: 'Which color?' }))
+      .toMatchObject({ id: key('attention-reply', attention.id), reused: true })
+    expect(h.outbox.find(item => item.id === key('attention-reply', attention.id))!.channel).toEqual(asked.channel)
     h.engine.report(ticketId, { state: 'ready', summary: 'Done' })
-    expect(h.engine.reply({ purpose: 'result', ticketId, text: 'Done' })).toMatchObject({ status: 'pending' })
-    expect(h.outbox.at(-1)!.channel).toEqual(trigger('1').channel)
+    // The result is queued where the ticket started as the report lands, so an explicit reply repeats nothing.
+    expect(h.engine.reply({ purpose: 'result', ticketId, text: 'Done' })).toMatchObject({ status: 'pending', reused: true })
+    expect(h.outbox.find(item => item.id === key('result-auto', ticketId))!.channel).toEqual(trigger('1').channel)
   })
 })
 describe('ticket commands', () => {
@@ -1294,9 +1313,10 @@ describe('gaps', () => {
     expect(() => h.engine.reply({ purpose: 'result', ticketId, text: 'Done' })).toThrow(new UserError('notReady'))
     h.engine.report(ticketId, { state: 'ready', summary: 'Done' })
     const sent = h.outbox.length
-    expect(h.engine.reply({ purpose: 'result', ticketId, text: 'Done' })).toMatchObject({ reused: false })
+    // The host queued the result where the ticket started; the explicit replies send nothing more.
     expect(h.engine.reply({ purpose: 'result', ticketId, text: 'Done' })).toMatchObject({ reused: true })
-    expect(h.outbox).toHaveLength(sent + 1)
+    expect(h.engine.reply({ purpose: 'result', ticketId, text: 'Done' })).toMatchObject({ reused: true })
+    expect(h.outbox).toHaveLength(sent)
     // A ticket whose PR closed unmerged, or that a person stopped, has no result to send.
     const closed = accepted(h, '5', 't5').ticketId!
     h.engine.bindThread(closed, { source: 'gh', id: 'pr-1' }, true)
