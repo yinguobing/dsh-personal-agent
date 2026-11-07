@@ -28,6 +28,8 @@ import { sourcesStatus, type SetupState } from './views/sources.ts'
 import { decisionList, search, threadDetail, threadList } from './views/threads.ts'
 import { executorLoad, ticketDetail, ticketList } from './views/tickets.ts'
 
+/** One turn of the person's conversation, as the panel shows it. */
+export interface ChatMessage { role: 'user' | 'assistant'; text: string; at: string }
 export interface HttpHost {
   readonly store: Store
   /** Feishu message links resolved since startup, used by search to match AppLink URLs. */
@@ -53,6 +55,10 @@ export interface HttpHost {
   checkSetup(): void
   requestPass(): void
   models(): Promise<ModelCatalog>
+  /** The last turns of the person's conversation, oldest first. */
+  chat(limit: number): ChatMessage[]
+  /** Delivers one message to the person's conversation, as if they had written it in the DSH chat. */
+  say(text: string, requestId: string): Promise<void>
 }
 /**
  * Represents a client-facing 400 or 404 error raised during management route parsing or lookup.
@@ -148,6 +154,8 @@ const SourceBlock = z.templateLiteral(['source:', z.string().regex(/^[a-z][a-z0-
 const SettingsBlockSchema = z.union([z.enum(['policy', 'eval', 'executor']), SourceBlock])
 const SaveRequest = z.object({ value: z.unknown(), revision: z.number().int().nonnegative() })
 
+const ChatQuery = z.object({ limit: z.coerce.number().int().min(1).max(200).default(30) })
+const ChatBody = z.object({ text: z.string().trim().min(1).max(4000), requestId: z.string().trim().min(1).max(200) }).strict()
 function routes(runtime: HttpHost): Routes {
   const { store } = runtime
   const ticket = (id: string) => { if (!store.tickets.get(id)) throw new RouteError(404, 'Ticket not found'); return id }
@@ -204,6 +212,12 @@ function routes(runtime: HttpHost): Routes {
     'POST policy-sync/:id': async ({ params }) => ({ policy: await runtime.settings.sync(params.id) }),
     'POST setup/check': () => { runtime.checkSetup(); return { restarting: true } },
     'GET models': () => runtime.models(),
+    'GET chat': ({ query }) => ({ messages: runtime.chat(ChatQuery.parse(query).limit) }),
+    'POST chat': async ({ body }) => {
+      const request = ChatBody.parse(await body())
+      await runtime.say(request.text, request.requestId)
+      return { sent: true as const }
+    },
     'GET prompts': ({ query }) => { const { revision, offset } = PromptsQuery.parse(query); return promptsView(runtime, revision, offset) },
     'PUT prompts': async input => {
       const request = z.object({ config: z.unknown(), baseRevision: z.number().int().nonnegative() }).parse(await promptBody(input))

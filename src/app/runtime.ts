@@ -208,6 +208,29 @@ export class Runtime extends Service implements SourceHost {
     const links = resolved ? { ...(resolved.repository ? { repository: resolved.repository } : {}), ...(resolved.feishu ? { feishu: resolved.feishu } : {}) } : {}
     return channel => this.sources.link(channel, links)
   }
+  /** The last turns of the person's conversation: their own messages and the agent's answers, without notices or relays. */
+  chat(limit = 30): { role: 'user' | 'assistant'; text: string; at: string }[] {
+    const agent = this.ctx.agents.get(this.masterId as SessionId)
+    const messages: { role: 'user' | 'assistant'; text: string; at: string }[] = []
+    for (const event of agent?.session.snapshotEvents() ?? []) {
+      if (event.type !== 'user/message' && event.type !== 'assistant/message') continue
+      const message = event.type === 'user/message' ? event.data : event.data.message
+      // Notices and relays the host injects are user messages too; only what the person typed belongs to the conversation.
+      if (event.type === 'user/message' && (message.source as { kind?: string }).kind !== 'user') continue
+      const text = message.content.filter(block => block.type === 'text').map(block => block.text).join('\n').trim()
+      if (!text) continue
+      messages.push({ role: event.type === 'user/message' ? 'user' : 'assistant', text, at: new Date(event.time).toISOString() })
+    }
+    return messages.slice(-limit)
+  }
+  /**
+   * Delivers one message to the main Session as the person's own, through the same path the DSH chat uses, so the
+   * transcript reads it as their message rather than as a notice the host injected.
+   */
+  async say(text: string, requestId: string): Promise<void> {
+    await this.ctx.sessionController.prompt({ requestId: requestId as never, sessionId: this.masterId as SessionId, mode: 'queue',
+      content: [{ type: 'text', text }] }, this.lifetime)
+  }
   ticketEnvironment(ticket: Ticket): Variable[] {
     const trigger = sourceTrigger(this, ticket)
     const { setup: { deployment }, sources } = this
@@ -248,7 +271,8 @@ export class Runtime extends Service implements SourceHost {
       get deployment() { return setup.deployment },
       get setupProblem() { return setup.problem }, get feishuProblem() { return setup.feishuProblem },
       configured: () => setup.configured(), links: () => runtime.links(), ticketEnvironment: ticket => runtime.ticketEnvironment(ticket),
-      checkSetup: () => { setup.check() }, requestPass: () => { passes.request() }, models: () => this.ctx.sessionController.modelCatalog() }
+      checkSetup: () => { setup.check() }, requestPass: () => { passes.request() }, models: () => this.ctx.sessionController.modelCatalog(),
+      chat: limit => runtime.chat(limit), say: (text, requestId) => runtime.say(text, requestId) }
   }
   /** Idempotent stop; concurrent or repeated calls share the same shutdown promise. */
   stop(): Promise<void> { return this.stopping ??= this.shutdown() }

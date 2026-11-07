@@ -274,3 +274,26 @@ worker 除了写票据目录，还**另存了一份到 `/home/xiaobai/xiaobai/dr
 ### 没解决的
 
 Web 端侧栏仍然按「每张票据一个 workspace」堆积（`morning-greeting-draft-…` 等），所以打开页面时它仍恢复上次的票据 workspace，输入框也就绑到那个已归档的 worker 会话上。DSH 没有「归档 workspace」的 API，只能从根上改：worker 不再为每张票据建独立 workspace，或者我们自己做一块面板内的对话入口。
+
+## 2026-11-07 · P1-f：面板里的对话入口（服务端）
+
+### 做了什么
+
+- `GET /orchestrator/api/chat?limit=N`：返回主人会话最近的若干轮（只要 `source.kind === 'user'` 的真人消息和助手回复，过滤掉宿主注入的 notice/relay JSON）。
+- `POST /orchestrator/api/chat` `{text, requestId}`：走 `sessionController.prompt`，与 DSH 聊天框同一条投递路径，因此消息在会话记录里就是「主人说的」，不是通知。
+- Runtime 增加 `chat()` / `say()`；API 类型与面板测试桩同步。
+
+### 验证
+
+`POST` 发「你好，从面板发一条」→ `{"sent":true}`；14 秒后 `GET chat?limit=6` 返回：
+
+```
+user : 你好，从面板发一条
+assistant : 你好，面板消息已收到。……
+```
+
+即：面板自己就能收发言、能看到回复，不再依赖 DSH 的会话选择。
+
+### 下一步
+
+客户端还没做——面板里目前没有这个输入框。下一轮加组件（消息列表 + 输入框 + 发送），并在浏览器里点一遍验证。
