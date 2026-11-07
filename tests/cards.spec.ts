@@ -27,6 +27,8 @@ const RULES: [rule: string, file: string, says: string[], gone?: string[]][] = [
   ['A piece of writing lands as a draft with front matter, and invents no facts', 'work',
     ['drafts/<slug>.md', 'status: draft | review | published', 'Never invent a fact, a quotation, a number, a date, a source, or the person\'s own experience',
       '[待补: 需要什么]', 'Keep the person\'s voice']],
+  ['Medical, legal and financial material is organized, not advised on', 'work',
+    ['never diagnose, advise or decide; say it is not professional advice']],
   ['A report is progress, ready, blocked, failed or dropped', 'work', ['Call orchestrator_report with progress, ready, blocked, failed or dropped;']],
   // The assessment rules are stated once, in the main Session's admission text, which orchestrator_eval no longer repeats.
   ['An assessment judges every enabled rule and accepts only a settled, bounded change', 'dispatch', [], ['Submit rule_assessments']],

@@ -51,3 +51,6 @@ A ticket that asks for a piece of writing lands as `drafts/<slug>.md`, slug shor
 Report ready with that path and two sentences: what it argues and what to check. An outline goes in the report, not another file.
 Never invent a fact, a quotation, a number, a date, a source, or the person's own experience; write `[待补: 需要什么]` and list it in the report.
 Keep the person's voice: plain sentences, concrete examples, no superlatives, no phrases that only sound like writing. Length is a ceiling, not a target. Keep quoted links inline. When they publish, update `status`, `published_at` and `url`.
+
+## Sensitive material
+Medical, legal or financial material: organize and quote it, never diagnose, advise or decide; say it is not professional advice.
