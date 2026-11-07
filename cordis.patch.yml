@@ -8,6 +8,10 @@
       name: dsh-superagent/chat-watch
     - id: dsh-superagent-github
       name: dsh-superagent/github-watch
+    # The person's phone. Needs a bot login (dsh-weixin-login), so it starts disabled.
+    - id: dsh-superagent-weixin
+      name: dsh-superagent/weixin-watch
+      disabled: true
     # Optional Feishu Source; requires configuring a bot CLI after enabling.
     - id: dsh-superagent-feishu
       name: dsh-superagent/feishu-watch

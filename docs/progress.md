@@ -182,3 +182,23 @@
 
 - 摘要目前只在小时窗口内触发：若那一小时恰好没有事项，当天就不发——这是「沉默是默认」的直接后果，可以接受。
 - 文案是中文硬编码，产品化时要走本地化。
+
+## 2026-11-07 · P1-b：微信入口（进来通了，出去还没接）
+
+### 做了什么
+
+- 新增 `weixin` Source（`src/sources/weixin.ts`）：读 `$DSH_HOME/weixin/accounts` 里由 `dsh-weixin-login` 写入的机器人账号，长轮询 iLink，把绑定的人的消息变成 Trigger；回复通道用 `ilink/bot/sendmessage`，带 context_token。
+- 单用户绑定：第一个发消息的人绑定这台机器，之后其他人一律忽略（个人版没有账号体系，这是最省事且可解释的默认）。
+- 自带最小 iLink 客户端（约 40 行），不引入额外依赖；`baseUrl` 可配，方便对着假服务端做集成测试。
+- 默认 disabled：没有登录时不该空转。
+
+### 验证（假 iLink 服务端，完全离线）
+
+- 假服务端返回一条 `帮我写一段产品介绍，存到 drafts/wx.md`；
+- `health.weixin = ready / Listening as test`；
+- 10 秒内出现票据「写一段产品介绍，存到 d…」，`working` → 80 秒时 `person`（worker 提问）；
+- 6 条单测：文本解析、Trigger 形状、账号读取、客户端收发、首次绑定、陌生人忽略。
+
+### 没通的
+
+**出站没走到微信。** worker 的提问被 Router 转述到了 Web 会话里，`/tmp/fake-out.jsonl` 始终为空——也就是说，微信那头的人收不到问题，只在 Web 端能看到。原因：Router 对「对话型」票据习惯了直接在会话里回答，没有调用 `orchestrator_reply` 走 Source 的 Channel。下一轮要先修这条，微信才算真正闭环。

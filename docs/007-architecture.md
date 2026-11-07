@@ -364,6 +364,7 @@ Some generic modules still refer directly to GitHub or Feishu:
 | `src/sources/host.ts` | `SourceHost`, `SourceContext`, `Health`, `health` and the fixed health texts |
 | `src/sources/poll.ts` | What GitHub and Feishu polling share: `POLL_HORIZON_MS`, `polled`, `cursorAt`, and `pollThreads`, which keeps a failure on its Thread as `pollError` |
 | `src/sources/chat.ts` | The Conversation kind and plugin entry, exported as `./chat-watch`: the owner's messages in the main Session as Triggers, plus `isOwnerMessage`, which keeps relays and other Sessions out |
+| `src/sources/weixin.ts` | The Weixin kind and plugin entry, exported as `./weixin-watch`: polls the logged-in iLink bot, binds the first person who writes, and sends replies with their context token |
 | `src/sources/github.ts` | The GitHub kind and plugin entry, exported as `./github-watch`: a poll round of notifications, the pull requests of open Tickets with their CI, and subscribed Threads |
 | `src/sources/github-trigger.ts` | GitHub comments, reviews, Issue bodies and CI changes as Triggers, and GitHub addresses |
 | `src/sources/github-pull.ts` | The pull request rules: which pull requests a Ticket follows (`claimPull`, `observePull`), the closes it reports to the Engine, and `pullEndNotices`, the chat notice of a Ticket that ended merged or closed |
@@ -399,7 +400,7 @@ Some generic modules still refer directly to GitHub or Feishu:
 | `src/client/locales.ts` | All copy in both languages, and the glossary of [001 Domain model](001-domain.md) |
 | `src/client/client.css`, `css.d.ts` | The panel's stylesheet, loaded as text |
 
-`src/sources/chat.ts`, `src/sources/github.ts` and `src/sources/feishu.ts` are also the entries of the Source plugins, built by `tsdown.config.ts` and exported in `package.json` as `./chat-watch`, `./github-watch` and `./feishu-watch`. The bundle's `cordis.patch.yml` inserts the four plugins, with Feishu disabled.
+`src/sources/chat.ts`, `src/sources/weixin.ts`, `src/sources/github.ts` and `src/sources/feishu.ts` are also the entries of the Source plugins, built by `tsdown.config.ts` and exported in `package.json` as `./chat-watch`, `./weixin-watch`, `./github-watch` and `./feishu-watch`. The bundle's `cordis.patch.yml` inserts the five plugins, with Weixin and Feishu disabled.
 
 ## Tests
 
@@ -411,6 +412,7 @@ Some generic modules still refer directly to GitHub or Feishu:
 | `tests/registry.spec.ts` | `SourceRegistry`: instances, validation, Policy parts, Channels and Thread context |
 | `tests/sources.spec.ts` | The Feishu and GitHub Sources on a `SourceContext`: translation, polls and read positions, the pull request rules, health |
 | `tests/digest.spec.ts` | The daily digest: counts, silence when empty, one send per day in the configured hour, retry after a failed send |
+| `tests/weixin.spec.ts` | The Weixin Source: text parts, the trigger on the person's thread, account lookup, the iLink client against a local server, and the first-person binding |
 | `tests/chat.spec.ts` | The Conversation Source: Trigger shape and identity, owner detection against relays, the default owner policy, and one message becoming one explicit Eval |
 | `tests/commands.spec.ts` | CLI calls as the deployment's accounts, the Channels' answers, and repository-scoped GitHub calls |
 | `tests/feishu-read.spec.ts`, `tests/github-read.spec.ts` | Feishu and GitHub reads |
