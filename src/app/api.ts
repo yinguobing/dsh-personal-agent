@@ -2,6 +2,7 @@
 import type { ModelCatalog } from '@deepseek-ai/dsh-api-session-controller/types'
 import type { PromptConfig, Prompts } from './prompts.ts'
 import type { ChatMessage, PromptsView, StateView, TicketPageView } from './http.ts'
+import type { ObservedListView } from './views/observed.ts'
 import type { HistoryView } from './settings-history.ts'
 import type { OverviewView } from './views/overview.ts'
 import type { SettingsView } from './views/settings.ts'
@@ -41,6 +42,8 @@ export interface Api {
   'POST setup/check': { response: { restarting: true } }
   'GET models': { response: ModelCatalog }
   'GET chat': { query?: { limit?: number }; response: { messages: ChatMessage[] } }
+  'GET observed': { query?: { limit?: number }; response: ObservedListView }
+  'POST observed/:id/act': { response: { sent: true } }
   'POST chat': { body: { text: string; requestId: string }; response: { sent: true } }
   'GET prompts': { query?: { revision?: number; offset?: number }; response: PromptsView }
   'PUT prompts': { body: { config: PromptConfig; baseRevision: number }; response: { revision: number; context_delivery: Delivery } }

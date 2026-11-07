@@ -5,6 +5,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { z } from 'zod'
 import { THREAD_FILTERS, TICKET_FILTERS, type Api, type ApiResponse, type RouteParams } from './api.ts'
 import { sourceSkills } from './context.ts'
+import { KV } from '../kv.ts'
 import type { ModelCatalog } from '@deepseek-ai/dsh-api-session-controller/types'
 import { PromptConflict, SKILL_NAME, SKILL_PREFIX, TEAM_SECTIONS, builtInBase, builtInParts, defaultPrompts, savePrompts, type Prompts }
   from './prompts.ts'
@@ -27,6 +28,7 @@ import { settingsView } from './views/settings.ts'
 import { sourcesStatus, type SetupState } from './views/sources.ts'
 import { decisionList, search, threadDetail, threadList } from './views/threads.ts'
 import { executorLoad, ticketDetail, ticketList } from './views/tickets.ts'
+import { observedList } from './views/observed.ts'
 
 /** One turn of the person's conversation, as the panel shows it. */
 export interface ChatMessage { role: 'user' | 'assistant'; text: string; at: string }
@@ -155,6 +157,7 @@ const SettingsBlockSchema = z.union([z.enum(['policy', 'eval', 'executor']), Sou
 const SaveRequest = z.object({ value: z.unknown(), revision: z.number().int().nonnegative() })
 
 const ChatQuery = z.object({ limit: z.coerce.number().int().min(1).max(200).default(30) })
+const ObservedQuery = z.object({ limit: z.coerce.number().int().min(1).max(100).default(20) })
 const ChatBody = z.object({ text: z.string().trim().min(1).max(4000), requestId: z.string().trim().min(1).max(200) }).strict()
 function routes(runtime: HttpHost): Routes {
   const { store } = runtime
@@ -213,6 +216,19 @@ function routes(runtime: HttpHost): Routes {
     'POST setup/check': () => { runtime.checkSetup(); return { restarting: true } },
     'GET models': () => runtime.models(),
     'GET chat': ({ query }) => ({ messages: runtime.chat(ChatQuery.parse(query).limit) }),
+    'GET observed': ({ query }) => observedList(views(runtime), ObservedQuery.parse(query).limit),
+    'POST observed/:id/act': async ({ params }) => {
+      const decision = store.decisions.get(params.id)
+      if (!decision) throw new RouteError(404, 'Decision not found')
+      const audit = (decision.audit ?? {}) as { would_accept?: boolean; proposal?: { title?: string; scope?: string } }
+      if (audit.would_accept !== true) throw new RouteError(400, 'This decision is not an observed proposal')
+      const trigger = store.triggers.get(decision.triggerIds[0] ?? '')
+      if (!trigger) throw new RouteError(404, 'Trigger not found')
+      // Approving an observation turns it into the person's own request: the router reads it, and the usual path follows.
+      await runtime.say(`把素材夹里的这份东西处理一下：${audit.proposal?.title ?? '这份素材'}。\n\n${trigger.text}`, `observed-${decision.id}`)
+      store.set(KV.observed.acted, [...(store.get(KV.observed.acted) ?? []), decision.id].slice(-200))
+      return { sent: true as const }
+    },
     'POST chat': async ({ body }) => {
       const request = ChatBody.parse(await body())
       await runtime.say(request.text, request.requestId)

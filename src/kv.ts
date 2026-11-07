@@ -31,6 +31,8 @@ export const KV = {
     builtIn: family<string, [base: string]>('prompt-built-in:') },
   /** Runtime: the main Session's ID. */
   runtime: { masterId: record<string>('master-id'), digestDay: record<string>('digest-day') },
+  /** Observed proposals the person approved, so the panel stops offering them. */
+  observed: { acted: record<string[]>('observed-acted') },
   /** Inbox: fingerprints of the files already handed to the Engine, so each is noticed once. */
   inbox: { seen: record<string[]>('inbox-seen') },
   /** Weixin: the long-poll cursor, the one bound person, and the latest context token per person. */

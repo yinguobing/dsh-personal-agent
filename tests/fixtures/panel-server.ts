@@ -373,6 +373,8 @@ const ROUTES: { [K in keyof Api]: Route<K> } = {
     groups: [{ id: 'worker-provider', name: 'Worker provider', models: [{ id: 'worker-model', name: 'Worker model',
       reasoning: { efforts: [{ id: 'high', name: 'High' }] } }] }] }) },
   'GET chat': { query: ['limit'], answer: () => ({ messages: [] }) },
+  'GET observed': { query: ['limit'], answer: () => ({ items: [] }) },
+  'POST observed/:id/act': { answer: () => ({ sent: true }) },
   'POST chat': { body: true, answer: () => ({ sent: true }) },
   'GET prompts': { query: ['revision', 'offset'], answer: () => server.prompts },
   'PUT prompts': { body: true, answer: ({ body }) => {
