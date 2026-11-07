@@ -6,7 +6,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { UserMessage } from '@deepseek-ai/dsh-session'
 import { z } from 'zod'
-import type { Trigger } from '../core/index.ts'
+import { key, type Trigger } from '../core/index.ts'
 import { health, sourceContext } from './host.ts'
 import type { SourceKind } from './kind.ts'
 
@@ -20,9 +20,9 @@ export type ChatConfig = z.infer<typeof ChatConfigSchema>
 /** Builds the Trigger for one message of the owner's conversation; its Thread is the conversation itself. */
 export function chatTrigger(input: { sessionId: string; messageId: string; text: string; at: string }): Trigger {
   return {
-    id: `chat:${input.messageId}`,
+    id: key(SOURCE, input.messageId),
     source: SOURCE,
-    threads: [{ source: SOURCE, id: `chat:${input.sessionId}` }],
+    threads: [{ source: SOURCE, id: input.sessionId }],
     actor: { source: SOURCE, id: OWNER },
     human: true,
     addressed: 'direct',

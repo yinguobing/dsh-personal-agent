@@ -73,3 +73,22 @@
 ### 遗留
 
 - `prompts/admission.md` 与 `prompts/work.md` 仍是编码口径（「仓库内的小改动」、PR/评审流程）。这两处决定的是**主动候选项的边界**和**worker 的干活方式**，属于 P2/P3，等内容场景定下来再改。
+
+## 2026-11-07 · P0-d：真的跑起来了（含一次真实模型调用）
+
+### 结果
+
+在隔离 profile 里配好 DeepSeek 凭据，用 Playwright 驱动 Web UI，以「主人」身份发消息：
+
+1. 第一条「你好，先打个招呼」→ 数据库出现 **1 条 chat Trigger**（thread = 主会话，actor = owner），Router 判定 `ignore`，理由「A greeting with no requested change; no ticket needed.」——入口与判定链路成立。
+2. 第二条「帮我写一段三句话的产品介绍，存到 drafts/intro.md」→ **1 条 Ticket**（`写一段三句话的产品介绍并保存到 drafts/intro.md`），目录 `work/draft-product-intro-b3101b2c272d`，**1 个 Assignment**，worker 真的起来了、跑了 Bash、并提出了一个澄清问题（「工作区里没有产品资料，这段介绍要写哪款产品？」）。
+
+### 修掉的真实 bug
+
+第一次跑的时候 worker 根本起不来，报 `This installation has no GitHub account`。根因在 `src/app/tools/executor.ts`：注册 `orchestrator_report` 工具时，描述串里直接调了 `githubOf(...)`，于是**任何** worker 会话装饰工具都会抛。改成可选取值。这是只有真跑才会暴露的问题，单元测试和启动检查都看不到。
+
+### 暴露的产品问题（下一轮）
+
+1. **回答问题很难**：worker 的澄清问题在侧边栏显示「Waiting for answer」，但页面上的选项按钮没有稳定出现，点 Answer 也没进入作答态。对普通人来说这一步就是死路。
+2. **追问可能被当成新任务**：上一轮实验里，对已开票的补充说明被 Router 判成 accept 新票，而不是 attach 到原票；worker 因此说「上一轮的具体交付形式我这边没收到」。
+3. 会话选择有坑：直接打开页面时，输入框可能绑定到别的会话（实验中出现过一次，消息没进主会话）。

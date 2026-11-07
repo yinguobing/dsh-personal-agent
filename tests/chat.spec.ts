@@ -2,14 +2,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { chatKind, chatTrigger, isOwnerMessage, messageText, OWNER, SOURCE } from '../src/sources/chat.ts'
 import { SettingsSchema, settingsPolicy } from '../src/policy.ts'
 import { SourceRegistry } from '../src/sources/registry.ts'
-import { Engine, MemoryRepositories, type Assessor, type Executor } from '../src/core/index.ts'
+import { Engine, MemoryRepositories, key, type Assessor, type Executor } from '../src/core/index.ts'
 
 describe('the conversation Source', () => {
   it('turns one message into an explicit request of the owner, on the conversation\'s own thread', () => {
     const trigger = chatTrigger({ sessionId: 'orchestrator-abc', messageId: 'm1', text: '帮我起个稿', at: '2026-11-07T02:00:00.000Z' })
-    expect(trigger).toMatchObject({ id: 'chat:m1', source: SOURCE, actor: { source: SOURCE, id: OWNER }, human: true,
+    expect(trigger).toMatchObject({ id: key(SOURCE, 'm1'), source: SOURCE, actor: { source: SOURCE, id: OWNER }, human: true,
       addressed: 'direct', at: '2026-11-07T02:00:00.000Z', text: '帮我起个稿' })
-    expect(trigger.threads).toEqual([{ source: SOURCE, id: 'chat:orchestrator-abc' }])
+    expect(trigger.threads).toEqual([{ source: SOURCE, id: 'orchestrator-abc' }])
     expect(trigger.meta).toMatchObject({ sessionId: 'orchestrator-abc', messageId: 'm1' })
   })
   it('keeps the message identity stable, so the same message is never two Triggers', () => {
@@ -69,6 +69,6 @@ describe('the conversation entry, end to end', () => {
     engine.receive(trigger)
     engine.evaluateDue()
     expect(assessor.request).toHaveBeenCalledTimes(1)
-    expect(assessor.request).toHaveBeenCalledWith(expect.objectContaining({ strength: 'explicit', triggers: [expect.objectContaining({ id: 'chat:m1', source: SOURCE })] }))
+    expect(assessor.request).toHaveBeenCalledWith(expect.objectContaining({ strength: 'explicit', triggers: [expect.objectContaining({ id: key(SOURCE, 'm1'), source: SOURCE })] }))
   })
 })
