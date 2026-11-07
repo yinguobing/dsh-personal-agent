@@ -51,11 +51,19 @@ export const FeishuBotSchema = z.object({ cli: z.string().trim().default('') })
 export const SETUP_FIELDS: Readonly<Record<string, readonly string[]>> = { github: Object.keys(GithubAccountsSchema.shape), feishu: Object.keys(FeishuBotSchema.shape) }
 
 export interface Deployment extends Machine {
-  repository: string
-  github: { cli: string; login: string; noreply: string }
+  /** The GitHub repository the GitHub Source watches; absent on installations that use no GitHub Source. */
+  repository?: string
+  /** The agent's GitHub identity; absent together with `repository`. */
+  github?: { cli: string; login: string; noreply: string }
   feishu?: FeishuBot
 }
 export interface FeishuBot { cli: string; appId: string; brand: 'feishu' | 'lark'; botId: string; name: string }
+
+/** The resolved GitHub account, for the code paths that only run when a GitHub Source or identity exists. */
+export function githubOf(deployment: Pick<Deployment, 'github'>): { cli: string; login: string; noreply: string } {
+  if (!deployment.github) throw new Error('This installation has no GitHub account')
+  return deployment.github
+}
 
 /** Resolve a command name or absolute path to an executable file, ignoring the worker shim directory. */
 export function executable(name: string, path: string, exclude?: string): string {
@@ -88,6 +96,8 @@ export async function resolveDeployment(machine: Machine, github: unknown, probe
   const { stateDir } = machine
   const accounts = GithubAccountsSchema.parse(github ?? {})
   const remote = accounts.repository
+  // Installations that use no GitHub Source leave both fields empty; the GitHub Source reports its own problem when enabled.
+  if (!remote && !accounts.cli) return { ...machine }
   if (!remote) throw new SetupError('repositoryUnset')
   if (!accounts.cli) throw new SetupError('agentCliUnset')
   let cli: string

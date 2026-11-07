@@ -65,6 +65,13 @@ describe('setup', () => {
     // A renamed repository is still resolved by its old name; notifications carry GitHub's current full_name.
     expect((await resolveDeployment(machine(), { repository: 'acme/gadgets', cli: 'gh' }, probe, path)).repository).toBe('acme/widgets')
   })
+  it('resolves an installation with no GitHub Source without probing any account', async () => {
+    const spy = vi.fn(probe)
+    const deployment = await resolveDeployment(machine(), {}, spy, path)
+    expect(deployment.repository).toBeUndefined()
+    expect(deployment.github).toBeUndefined()
+    expect(spy).not.toHaveBeenCalled()
+  })
   it('names what setup needs and where it is set', async () => {
     const needs = (place: string, code: string, values: Record<string, unknown>, github: unknown) =>
       expect(resolveDeployment(machine(), github, probe, path)).rejects.toEqual(setupError(place, code, values))
