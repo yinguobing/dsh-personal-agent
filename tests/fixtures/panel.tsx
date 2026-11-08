@@ -35,7 +35,10 @@ export async function settle() {
   })
   await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)) })
 }
-export async function mount(dictionary: Record<string, string> = zh) {
+export async function mount(dictionary: Record<string, string> = zh, view: 'engineer' | 'simple' = 'engineer') {
+  // The operator's tabs sit behind the simple-view toggle, which these specs opt into unless they test it.
+  if (view === 'engineer') localStorage.setItem('dt-engineer', '1')
+  else localStorage.removeItem('dt-engineer')
   container = document.createElement('div'); document.body.append(container)
   root = createRoot(container)
   await act(async () => { root!.render(<Panel t={translator(dictionary)} />) })
