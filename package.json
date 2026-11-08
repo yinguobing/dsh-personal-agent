@@ -2,7 +2,7 @@
   "name": "dsh-personal-agent",
   "author": "DeepSeek Harness Team <team@dsh.dev>",
   "license": "MIT",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "A proactive agent for one GitHub repository, as a DSH (DeepSeek Harness) bundle: it listens to GitHub and optionally Feishu, evaluates requests under a Policy, turns authorized ones into Tickets, and executes each in its own DSH Session.",
   "type": "module",
@@ -55,7 +55,7 @@
   },
   "engines": {
     "node": "^22.19.0 || >=24.0.0",
-    "dsh": "^0.2.1-alpha.2"
+    "dsh": ">=0.2.1-alpha.2 <0.3.0 || >=0.2.2-rc.1 <0.3.0"
   },
   "packageManager": "pnpm@11.7.0",
   "dependencies": {
