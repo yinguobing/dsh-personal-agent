@@ -142,6 +142,8 @@ const TEXT = {
   homeIdle: ['待命', 'Idle'],
   homeEmpty: ['现在我手上没有事。想让我做什么，或者把文件放进我的素材夹。', 'Nothing on my desk right now. Tell me what to do, or drop a file into my inbox folder.'],
   homeAdvanced: ['高级视图', 'Advanced view'],
+  homeEarlier: ['看更早的', 'Earlier'],
+  homeReply: ['回话', 'Answer'],
   homeSimple: ['简单视图', 'Simple view'],
   chatFailed: ['刚才那件事我没能完成：{error}', 'I could not finish that: {error}'],
   chatNoKey: ['我没法回答：还缺一个模型密钥。到 Models 设置里填一个，或在 ~/.dsh/.credentials.yaml 里放 DEEPSEEK_API_KEY。',

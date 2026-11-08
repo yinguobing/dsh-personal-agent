@@ -42,6 +42,8 @@ export interface Api {
   'POST setup/check': { response: { restarting: true } }
   'GET models': { response: ModelCatalog }
   'GET chat': { query?: { limit?: number }; response: { messages: ChatMessage[]; error?: string } }
+  'GET home': { query?: { limit?: number }; response: { messages: ChatMessage[]; error?: string; tickets: TicketListView['items'];
+    observed: ObservedListView['items']; masterId: string } }
   'GET observed': { query?: { limit?: number }; response: ObservedListView }
   'POST observed/:id/act': { response: { sent: true } }
   'POST chat': { body: { text: string; requestId: string }; response: { sent: true } }

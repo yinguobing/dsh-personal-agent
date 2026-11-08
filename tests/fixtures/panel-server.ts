@@ -324,6 +324,10 @@ const ROUTES: { [K in keyof Api]: Route<K> } = {
     ({ items: query.kind === 'ignore' ? [] : [acceptDecision()], next_offset: null }) },
   'POST decisions/:id/dismiss': { answer: ({ params }) => params.id === 'u1' ? { dismissed: true } : refuse(404,
     'Unavailable Eval not found') },
+  'GET home': { query: ['limit'], answer: () => ({ messages: [{ role: 'assistant', text: '收到。', at: '2026-09-22T00:00:02Z' }],
+    tickets: page(server.tickets.open).items, masterId: 'master',
+    observed: [{ decisionId: 'o1', triggerId: 'e3', at: '2026-09-22T00:00:01Z', preview: '一份体检报告', title: '整理体检报告', scope: 'filing',
+      rules: [{ id: 'filing', matched: true, reason: '应归档' }] }] }) },
   'GET tickets': { query: ['state', 'offset', 'limit'], answer: ({ query }) => page(server.tickets[query.state === 'ended' ? 'ended'
     : 'open']) },
   'GET tickets/:id': { answer: ({ params }) => server.ticketDetails[params.id] ?? refuse(404, 'Ticket not found') },

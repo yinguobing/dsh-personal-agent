@@ -118,6 +118,7 @@ export function stateView(runtime: HttpHost) {
     maxWorkers: settings.executor.maxWorkers },
     masterId: runtime.masterId, paused: settings.paused, health: runtime.health }
 }
+const HomeQuery = z.object({ limit: z.coerce.number().int().min(1).max(200).default(40) })
 const views = (runtime: HttpHost): ViewHost => ({ store: runtime.store, sources: runtime.sources, links: runtime.links() })
 const setupState = (runtime: HttpHost): SetupState => ({ deployment: runtime.configured() ? runtime.deployment : undefined,
   problem: runtime.setupProblem, feishuProblem: runtime.feishuProblem })
@@ -218,6 +219,12 @@ function routes(runtime: HttpHost): Routes {
     'POST setup/check': () => { runtime.checkSetup(); return { restarting: true } },
     'GET models': () => runtime.models(),
     'GET chat': ({ query }) => runtime.chat(ChatQuery.parse(query).limit),
+    // One request for the person's first screen: the conversation, the work in flight, and what observe proposed.
+    'GET home': ({ query }) => {
+      const { limit } = HomeQuery.parse(query)
+      return { ...runtime.chat(limit), tickets: ticketList(views(runtime), 'open', 0, 100).items,
+        observed: observedList(views(runtime), 20).items, masterId: runtime.masterId }
+    },
     'GET observed': ({ query }) => observedList(views(runtime), ObservedQuery.parse(query).limit),
     'POST observed/:id/act': async ({ params }) => {
       const decision = store.decisions.get(params.id)

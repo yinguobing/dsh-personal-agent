@@ -391,3 +391,11 @@ a.dt-btn, a.dt-btn:hover { text-decoration: none; }
 .dt-chat-input { flex: 1; resize: vertical; min-height: 44px; padding: 8px 10px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; font: inherit; background: var(--dsw-alias-bg-base); color: inherit; }
 .dt-start { padding: 4px 0 8px; }
 .dt-start .dt-textlink { text-align: left; }
+.dt-home-page { display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0; }
+.dt-home { display: flex; flex-direction: column; height: 100%; width: 100%; max-width: 960px; margin: 0 auto; min-height: 0; gap: 8px; }
+.dt-home-stream { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 4px 0 12px; display: flex; flex-direction: column; }
+.dt-stream { list-style: none; margin: auto 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.dt-home-foot { flex: none; display: flex; flex-direction: column; gap: 8px; padding: 10px 0 16px; border-top: 0.5px solid var(--dsw-alias-border-l3); background: var(--dsw-alias-bg-base); }
+.dt-stream-card { display: flex; flex-direction: column; gap: 6px; max-width: 92%; padding: 10px 12px; border: 0.5px solid var(--dsw-alias-border-l3); border-radius: 12px; background: var(--dsw-alias-bg-layer-1); }
+.dt-stream-card-person { border-color: var(--dsw-alias-brand-primary); }
+.dt-stream-card-proposal { background: var(--dsw-alias-bg-module-platform); }

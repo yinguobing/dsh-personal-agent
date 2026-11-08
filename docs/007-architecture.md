@@ -384,7 +384,7 @@ Some generic modules still refer directly to GitHub or Feishu:
 | `src/client/api.ts` | Calls and polls of the management API, typed by `src/app/api.ts`, and the Decision filters of the Eval status |
 | `src/client/route.ts` | The tabs, the settings groups, the typed routes that `parseRoute` reads, and the route memory with the settings group opened last |
 | `src/client/overview.tsx` | The overview |
-| `src/client/home.tsx` | The person's default surface: the conversation, the things in flight in everyday words, and the recorded proposals; the operator's tabs stay behind a remembered toggle |
+| `src/client/home.tsx` | The person's default surface: one conversation with the open work as cards, the decisions that need them above a pinned composer, and the operator's tabs behind a remembered gear |
 | `src/client/observed.tsx` | The section that offers recorded proposals, with one button to let the work happen and one to drop it |
 | `src/app/views/observed.ts` | What observe mode would have done: recorded proposals whose Trigger still exists and no ticket took up, for the panel to approve or drop |
 | `src/client/chat.tsx` | The conversation entry: the last turns of the person's conversation and a composer that posts to the main Session, independent of which DSH session is open |
