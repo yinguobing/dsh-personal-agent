@@ -60,6 +60,7 @@ it('registers a localized main panel, sidebar entry and Plugin Manager row page,
 })
 
 it('opens a listed Session through the workspace from the main panel', async () => {
+  localStorage.setItem('dt-engineer', '1')
   serve()
   const { ctx, main } = fixture(['master'])
   const view = await render(main, { t })
@@ -69,6 +70,7 @@ it('opens a listed Session through the workspace from the main panel', async () 
 })
 
 it('reports a Session missing from the catalog in the interface language', async () => {
+  localStorage.setItem('dt-engineer', '1')
   serve()
   const { ctx, main } = fixture([])
   const view = await render(main, { t })

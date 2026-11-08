@@ -386,7 +386,7 @@ a.dt-btn, a.dt-btn:hover { text-decoration: none; }
 .dt-chat-list { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow: auto; }
 .dt-chat-turn { padding: 8px 10px; border-radius: 8px; white-space: pre-wrap; line-height: 1.5; font-size: 14px; }
 .dt-chat-mine { background: var(--dsw-alias-bg-layer-2); align-self: flex-end; max-width: 80%; }
-.dt-chat-theirs { background: var(--dsw-alias-bg-layer-1); border: 1px solid var(--dsw-alias-border-l2); max-width: 80%; }
+.dt-chat-theirs { padding-left: 0; max-width: 100%; }
 .dt-chat-compose { display: flex; gap: 8px; align-items: flex-end; }
 .dt-chat-input { flex: 1; resize: vertical; min-height: 44px; padding: 8px 10px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; font: inherit; background: var(--dsw-alias-bg-base); color: inherit; }
 .dt-start { padding: 4px 0 8px; }

@@ -1,11 +1,10 @@
 /** The default surface for the person: what it is doing, what waits on them, and what it would like to do. */
 import { usePoll } from './api.ts'
 import type { TicketListView } from '../app/views/tickets.ts'
-import { Button, Icon } from './controls.tsx'
+import { Button } from './controls.tsx'
 import { ChatEntry } from './chat.tsx'
-import { errorText } from './text.ts'
 import { ObservedProposals } from './observed.tsx'
-import { usePanel, usePanelData } from './provider.tsx'
+import { usePanel } from './provider.tsx'
 import { Hint, Section } from './widgets.tsx'
 
 type Row = TicketListView['items'][number]
@@ -30,9 +29,7 @@ function detail(row: Row): string {
 }
 
 export function HomePage({ onAdvanced }: { onAdvanced: () => void }) {
-  const { t, call, navigate, openSession, notify } = usePanel()
-  const { state } = usePanelData()
-  const masterId = state?.masterId
+  const { t, call, navigate } = usePanel()
   const tickets = usePoll(() => call('GET tickets', { query: { limit: 30 } }), [], 5000)
   const items = tickets.data?.items ?? []
   const waiting = items.filter(row => row.stage === 'person')
@@ -52,8 +49,6 @@ export function HomePage({ onAdvanced }: { onAdvanced: () => void }) {
       <header className="dt-head">
         <div className="dt-head-title"><h1 className="dt-title">{t('title')}</h1></div>
         <div className="dt-toolbar">
-          <Button variant="outline" size="sm" icon={<Icon name="session" size={14} />} disabled={!masterId}
-            onClick={() => { if (masterId) openSession(masterId).catch(failure => notify(errorText(failure))) }}>{t('openMaster')}</Button>
           <Button variant="ghost" size="sm" onClick={onAdvanced}>{t('homeAdvanced')}</Button>
         </div>
       </header>

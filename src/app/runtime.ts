@@ -295,7 +295,7 @@ export class Runtime extends Service implements SourceHost {
       const detail = /api key|credentials/i.test(raw) ? '这台安装还没有模型密钥'
         : raw.replace(/\s+/g, ' ').slice(0, 80)
       this.outbox.send({ id: key('turn-error', this.masterId, String(event.time)), channel: recent.channel,
-        text: `刚才那条消息没能处理完：${detail}。可以稍后再发一次。`, kind: 'notice' })
+        text: `刚才那条我没能处理完：${detail}。可以稍后再发一次。`, kind: 'notice' })
     })
     this.executor.install()
     await this.sessions.ensure(this.masterId, this.machine.stateDir, 'dsh-superagent orchestrator', 'orchestrator')
