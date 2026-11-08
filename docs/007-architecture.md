@@ -385,6 +385,7 @@ Some generic modules still refer directly to GitHub or Feishu:
 | `src/client/route.ts` | The tabs, the settings groups, the typed routes that `parseRoute` reads, and the route memory with the settings group opened last |
 | `src/client/overview.tsx` | The overview |
 | `src/client/dock.tsx` | A quiet line above the composer of the person's own Session: how much waits, and a way into the work list |
+| `src/client/compaction.tsx` | Replaces the conversation's compaction node with one sentence: how much was compacted, and what it kept |
 | `src/client/work.tsx` | One piece of work as a person reads it: what each assignment reported, the files it left with a preview, and three actions |
 | `src/app/views/artifacts.ts` | Lists the files under a ticket's own directory, with the text of small text files for preview |
 | `src/client/home.tsx` | The person's default surface: one conversation with the open work as cards, the decisions that need them above a pinned composer, and the operator's tabs behind a remembered gear |
@@ -453,6 +454,7 @@ Some generic modules still refer directly to GitHub or Feishu:
 | `tests/deployment.spec.ts`, `tests/environment.spec.ts`, `tests/index.spec.ts` | The plugin configuration and setup, the agent's process environment, the plugin entry |
 | `tests/service-script.spec.ts` | `scripts/dsh-superagent` against fake `ps`, `tmux` and `dsh` |
 | `tests/client.spec.tsx`, `tests/navigation.spec.ts`, `tests/controls.spec.tsx` | The client plugin's registration and polling, Session navigation and route memory, the local controls, and the panel's imports, which have no cycle |
+| `tests/compaction.spec.tsx` | The compaction notice says what was compacted and lets the person read what survives |
 | `tests/panel-home.spec.tsx` | The simple home is the default, shows the conversation and the things in flight, and toggles to the operator view and back |
 | `tests/panel-overview.spec.tsx`, `panel-source.spec.tsx`, `panel-trigger.spec.tsx`, `panel-eval.spec.tsx`, `panel-execution.spec.tsx` | Each page of the panel, against a fake management API answered by route |
 | `tests/panel-settings.spec.tsx`, `panel-prompts.spec.tsx`, `panel-deployment.spec.tsx`, `panel-panel.spec.tsx` | The settings groups, drafts and history, the prompts, the Deployment page, and the panel's search, glossary and route memory |

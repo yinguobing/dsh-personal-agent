@@ -13,6 +13,7 @@ import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { openKnownSession, SessionNavigationError } from '../navigation.ts'
 import { App } from './app.tsx'
 import { WorkDock } from './dock.tsx'
+import { CompactionNotice, ManualCompactionNotice } from './compaction.tsx'
 import { PluginConfig, usePageForm } from './deployment.tsx'
 import { en, zh } from './locales.ts'
 import type { T } from './text.ts'
@@ -49,7 +50,10 @@ function Mounted({ ctx, t }: { ctx: ClientContext; t: T }) {
 // The conversation plugin owns `conversation.input.dock` and is not a dependency here, so declare the seat this plugin
 // registers into; without it the slot table has no such name.
 declare module '@deepseek-ai/dsh-client-ui-slots' {
-  interface SlotMap { 'conversation.input.dock': any }
+  interface SlotMap {
+    'conversation.input.dock': any
+    'conversation.chat.node': any
+  }
 }
 
 export const inject = ['slots', 'locale', 'sessions', 'uiWorkspace', 'layout']
@@ -64,6 +68,13 @@ export function apply(ctx: ClientContext): void {
   ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({ name: 'conversation.input.dock', id: PANEL_ID,
     order: 40, locale: NS, inject: (sessionId?: string, _actions?: unknown) => ({ sessionId: sessionId ?? '', open: () => ctx.layout.selectPanel(PANEL_ID) }) },
   (props: { sessionId: string; open: () => void; t: T }) => <WorkDock sessionId={props.sessionId} open={props.open} t={props.t} />))
+  // Saying that the middle was compacted: the person feels it as "it forgot", not as a token count.
+  ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({ name: 'conversation.chat.node', key: 'compaction',
+    locale: NS }, (props: { node: { data: { summary: string | null; shadowedItemCount: number | null; shadowedTokenCount: number | null } }; t: T }) =>
+    <CompactionNotice node={props.node} t={props.t} />))
+  ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({ name: 'conversation.chat.node', key: 'manual-compaction',
+    locale: NS }, (props: { node: { data: { compaction: { summary: string | null; shadowedItemCount: number | null; shadowedTokenCount: number | null } | null } }; t: T }) =>
+    <ManualCompactionNotice node={props.node} t={props.t} />))
   ctx.slots.inject('plugins.row.config', () => ctx.slots.register({ name: 'plugins.row.config', key: `${ENTRY}#${ENTRY}`, locale: NS },
     (props: PluginConfigViewProps & { t: T }) => <PluginConfig t={props.t} view={props.view} form={props.form} />))
 }
