@@ -5,7 +5,8 @@
 > We have adapted it for publication, so it is not identical to our internal version or the implementation described in *Exploring Super-agent Design: Towards a More Autonomous Agent System*. Some designs discussed in the article are directions for future development and are not implemented in this prototype.
 
 This fork keeps the prototype's architecture and turns it into a personal agent for one person, published as
-`dsh-personal-agent`: https://github.com/yinguobing/dsh-personal-agent The package name is the only renamed identifier: plugin ids, the `orchestrator` service and the
+`dsh-personal-agent`: https://github.com/yinguobing/dsh-personal-agent. In Chinese it is **搭档** — the person you work
+alongside, who keeps the notes and runs the errands, and asks before deciding anything. The package name is the only renamed identifier: plugin ids, the `orchestrator` service and the
 `orchestrator_*` tools still carry the prototype's names, so `git diff` against upstream stays readable.
 
 dsh-superagent is a proactive coding agent for one GitHub repository, packaged as a bundle for [DeepSeek Harness](https://www.deepseek.com/en/harness/). It listens to GitHub and, optionally, Feishu. When someone allowed asks the agent for work, it opens a work item, works on it in its own agent session and directory, and answers in the original conversation, for example with a pull request. A web panel shows what needs a person.
@@ -28,7 +29,7 @@ is the configuration the script would have written:
 
 ```sh
 dsh plugin --profile personal add \
-  https://github.com/yinguobing/dsh-personal-agent/releases/download/v0.2.1/dsh-personal-agent-0.2.1.tgz
+  https://github.com/yinguobing/dsh-personal-agent/releases/download/v0.2.2/dsh-personal-agent-0.2.2.tgz
 ```
 
 Installing straight from git is not supported: the build output is not committed, and pnpm asks for a per-commit
