@@ -82,8 +82,9 @@ export function pollInbox(source: ReturnType<typeof sourceContext>, directory: s
   const seen = new Set(source.state.get(KV.inbox.seen) ?? [])
   for (const entry of entries) {
     if (seen.has(entry.fingerprint)) continue
-    const reply = source.receive(inboxTrigger(entry, inboxPreview(entry)))
-    if (reply !== 'filtered') seen.add(entry.fingerprint)
+    // A dropped file is the person saying "look at this" without typing: say so in their conversation.
+    void source.converse(`素材夹里多了一份 ${entry.name}。`)
+    seen.add(entry.fingerprint)
   }
   source.state.set(KV.inbox.seen, entries.map(entry => entry.fingerprint))
   return entries.length

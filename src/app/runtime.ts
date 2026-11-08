@@ -83,8 +83,10 @@ export class Runtime extends Service implements SourceHost {
   private stopping?: Promise<void>
   private readonly sourceDeps: SourceContextDeps
   private readonly toolHost: MainToolsHost & ExecutorToolsHost
-  /** The last message that came in through a Channel, so a failed turn can say so where it was asked. */
+  /** The last message that came in through a Channel, so a failed turn can say so where it was asked, and a good one answers there. */
   private lastChannel?: { channel: ChannelRef; at: number }
+  /** The text of the latest answer in the person's conversation, held until its turn ends. */
+  private channelReply?: string
   /** Non-zero while a main-Session tool is executing an Engine command, suppressing self-triggered domain event notices. */
   private quiet = 0
   constructor(ctx: Context, readonly machine: Machine, restart: () => void) {
@@ -185,7 +187,8 @@ export class Runtime extends Service implements SourceHost {
       const passes = this.passes = new Passes({ engine: { receive: trigger => engine.receive(trigger), evaluateDue }, effects,
         health: this.runtimeHealth, lifetime: this.lifetime, configured: () => setup.configured(), closing: () => this.closing(),
         digest: () => digest.tick() })
-      this.sourceDeps = { store, engine, outbox, commands, sources, masterId, get ready() { return runtime.ready },
+      this.sourceDeps = { store, engine, outbox, commands, sources, masterId, converse: (text: string, channel?: ChannelRef) => runtime.converse(text, channel),
+        get ready() { return runtime.ready },
         get deployment() { return setup.deployment }, configured: () => setup.configured(),
         get setupProblem() { return setup.problem }, get feishuProblem() { return setup.feishuProblem }, receive: trigger => passes.receive(trigger) }
       this.toolHost = { context: ctx, engine, store, prompts, sessions, settings: this.settings, assessor, resources,
@@ -237,6 +240,15 @@ export class Runtime extends Service implements SourceHost {
     return { messages: messages.slice(-limit), ...(error ? { error } : {}) }
   }
   /**
+   * The person speaking from a Channel: the words enter their one conversation like any other message, and when the turn
+   * ends the answer goes back out through the Channel it came from.
+   */
+  async converse(text: string, channel?: ChannelRef): Promise<void> {
+    if (channel) this.lastChannel = { channel, at: Date.now() }
+    // Same path as the panel's composer: the words are the person's own, not a notice the host injected.
+    await this.say(text, key('converse', String(Date.now()), Math.random().toString(16).slice(2)))
+  }
+  /**
    * Delivers one message to the main Session as the person's own, through the same path the DSH chat uses, so the
    * transcript reads it as their message rather than as a notice the host injected.
    */
@@ -285,9 +297,26 @@ export class Runtime extends Service implements SourceHost {
     // A turn that failed leaves the person's message unanswered. Say so where it came from, so a conversation on a
     // phone is not left silent; the panel reads the same failure from `chat`.
     this.ctx.on('session/event', (session, event) => {
-      if (session.id !== this.masterId || event.type !== 'turn/end') return
+      if (session.id !== this.masterId) return
+      // The answer to a message that came in through a Channel goes back out through it, as the partner's own words.
+      if (event.type === 'assistant/message') {
+        const message = (event.data as { message?: { content?: readonly { type?: string; text?: string }[] } }).message
+        const text = (message?.content ?? []).filter(part => part.type === 'text').map(part => part.text ?? '').join('').trim()
+        if (text) this.channelReply = text
+        return
+      }
+      if (event.type !== 'turn/end') return
       const reason = (event.data as { reason?: { kind?: string; error?: { message?: string } } }).reason
-      if (reason?.kind !== 'error') return
+      if (reason?.kind !== 'error') {
+        const recent = this.lastChannel
+        const reply = this.channelReply
+        if (recent && reply && Date.now() - recent.at <= 10 * 60_000) {
+          this.outbox.send({ id: key('channel-reply', String(event.time)), channel: recent.channel, text: reply, kind: 'reply' })
+        }
+        this.channelReply = undefined
+        this.lastChannel = undefined
+        return
+      }
       const recent = this.lastChannel
       if (!recent || Date.now() - recent.at > 5 * 60_000) return
       const raw = reason.error?.message ?? 'unknown error'

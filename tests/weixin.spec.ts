@@ -71,23 +71,24 @@ describe('the iLink client', () => {
     expect(JSON.parse(sent[0]!).msg).toMatchObject({ to_user_id: 'u1', context_token: 'ctx1', item_list: [{ type: 1, text_item: { text: '收到' } }] })
   })
 
-  it('binds the first person and ignores anyone else', async () => {
+  it('binds the first person, speaks their message into the conversation, and ignores anyone else', async () => {
     const state = new Map<string, unknown>()
-    const receive = vi.fn()
+    const converse = vi.fn()
     const source = {
       config: () => ({ accountId: '', baseUrl: base, pollSeconds: 5 }),
       state: { get: (k: string) => state.get(k), set: (k: string, v: unknown) => { state.set(k, v) }, keys: () => [] },
-      report: vi.fn(), receive,
+      report: vi.fn(), converse,
     }
     const controller = new AbortController()
     const running = runWeixin(source as never, controller.signal)
-    await vi.waitFor(() => expect(receive).toHaveBeenCalledTimes(1))
-    // A second poll carries a stranger: it must not reach the Engine.
+    await vi.waitFor(() => expect(converse).toHaveBeenCalledTimes(1))
+    // A second poll carries a stranger: it must not reach the conversation.
     await new Promise(resolve => setTimeout(resolve, 50))
     controller.abort(); await running
-    expect(receive).toHaveBeenCalledTimes(1)
+    expect(converse).toHaveBeenCalledTimes(1)
     expect(state.get(KV.weixin.owner)).toBe('u1')
-    expect(receive.mock.calls[0]![0]).toMatchObject({ source: 'weixin', text: '帮我写一段介绍' })
+    expect(converse.mock.calls[0]![0]).toBe('帮我写一段介绍')
+    expect(converse.mock.calls[0]![1]).toMatchObject({ source: 'weixin', address: { person: 'u1' } })
   })
 })
 

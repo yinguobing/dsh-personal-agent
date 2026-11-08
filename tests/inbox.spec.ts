@@ -35,16 +35,17 @@ describe('the inbox Source', () => {
     expect(trigger.text).toContain('新素材：idea.md')
     expect(trigger.text).toContain('一段素材')
   })
-  it('hands each file to the Engine once, and never twice', () => {
+  it('says each file into the conversation once, and never twice', () => {
     const state = new Map<string, unknown>()
-    const receive = vi.fn(() => 'stored' as const)
+    const converse = vi.fn()
     const source = { deployment: { stateDir: dir }, config: () => ({ directory: join(dir, 'inbox'), pollSeconds: 5 }),
       state: { get: (k: string) => state.get(k), set: (k: string, v: unknown) => { state.set(k, v) }, keys: () => [] },
-      report: vi.fn(), receive }
+      report: vi.fn(), converse }
     writeFileSync(join(dir, 'inbox', 'idea.md'), '一段素材\n')
     pollInbox(source as never, join(dir, 'inbox'))
     pollInbox(source as never, join(dir, 'inbox'))
-    expect(receive).toHaveBeenCalledTimes(1)
+    expect(converse).toHaveBeenCalledTimes(1)
+    expect(converse.mock.calls[0]![0]).toContain('idea.md')
     expect(state.get(KV.inbox.seen)).toHaveLength(1)
   })
 })

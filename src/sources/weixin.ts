@@ -140,7 +140,9 @@ export async function runWeixin(source: ReturnType<typeof sourceContext>, signal
         else if (bound !== person) continue
         if (message.context_token) source.state.set(KV.weixin.context(person), message.context_token)
         if (!weixinText(message)) continue
-        source.receive(weixinTrigger(message, person, new Date(Number(message.create_time) || Date.now()).toISOString()))
+        // The bound person is the owner: their message is simply them talking, and the answer goes back here.
+        void source.converse(weixinText(message), { source: SOURCE, thread: person,
+          address: { person, ...(message.context_token ? { contextToken: message.context_token } : {}) } })
       }
       source.report('weixin', { state: 'ready', detail: `Listening as ${account.accountId}` })
     } catch (error) {
