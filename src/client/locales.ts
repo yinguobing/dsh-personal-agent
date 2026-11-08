@@ -154,6 +154,7 @@ const TEXT = {
   workNothing: ['还没有可以说的进展。', 'Nothing to report yet.'],
   workNoResult: ['还没有留下文件。', 'No files yet.'],
   workBinary: ['这个文件不是文本，打开不了预览。', 'This file is not text, so there is no preview.'],
+  workSave: ['存一份', 'Save a copy'],
   workChange: ['改一下', 'Change something'],
   workAgain: ['再做一版', 'Another version'],
   homeThings: ['我在办的事', 'What I am working on'],

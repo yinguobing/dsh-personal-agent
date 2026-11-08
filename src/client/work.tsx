@@ -13,6 +13,16 @@ const when = (at: string): string => {
   return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 const size = (bytes: number): string => bytes < 1024 ? `${bytes} B` : `${Math.round(bytes / 1024)} KB`
+/** Hands one produced file to the person: the agent writes inside its workspace, the person moves the result out. */
+function save(file: { path: string; text?: string }): void {
+  if (file.text === undefined) return
+  const url = URL.createObjectURL(new Blob([file.text], { type: 'text/plain;charset=utf-8' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = file.path.split('/').pop() ?? 'file.txt'
+  link.click()
+  URL.revokeObjectURL(url)
+}
 /** What a worker's report means to the person, rather than its internal state name. */
 const reportWord = (state: string | undefined, t: (key: never) => string): string => state === 'ready' ? t('workState.ready' as never)
   : state === 'waiting' ? t('workState.waiting' as never) : state === 'blocked' ? t('workState.blocked' as never)
@@ -57,6 +67,9 @@ export function WorkPanel({ row, onClose, onRewrite }: {
               <summary><span>{file.path}</span><span className="dt-hint">{size(file.size)}</span></summary>
               {file.text ? <pre className="dt-work-text">{file.text}</pre> : <p className="dt-hint">{t('workBinary')}</p>}
             </details>
+            {file.text !== undefined && <div className="dt-row-meta dt-row-buttons">
+              <Button variant="outline" size="sm" onClick={() => save(file)}>{t('workSave')}</Button>
+            </div>}
           </li>)}</ul>
           : <Hint>{t('workNoResult')}</Hint>}
       </section>

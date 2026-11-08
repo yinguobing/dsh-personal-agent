@@ -42,3 +42,21 @@ it('keeps the way into the operator view behind a gear, and comes back', async (
   expect(all('[role="tab"]')).toHaveLength(0)
   expect(all('.dt-stream')).toHaveLength(1)
 })
+
+it('hands a produced file to the person from the report', async () => {
+  const created: Blob[] = []
+  const original = URL.createObjectURL
+  URL.createObjectURL = ((blob: Blob) => { created.push(blob); return 'blob:test' }) as typeof URL.createObjectURL
+  URL.revokeObjectURL = (() => {}) as typeof URL.revokeObjectURL
+  try {
+    await mount(zh, 'simple')
+    await click(all('.dt-stream-card .dt-open')[0]!)
+    // The fixture's report lists one text file; saving it copies the text out as a download.
+    const save = all('button').find(button => button.textContent === zh['workSave'])
+    expect(save).toBeDefined()
+    await click(save!)
+    expect(created).toHaveLength(1)
+  } finally {
+    URL.createObjectURL = original
+  }
+})
