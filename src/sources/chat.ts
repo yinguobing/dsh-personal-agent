@@ -74,17 +74,9 @@ export function apply(ctx: Context): void {
   ctx.effect(() => ctx.orchestrator.sources.register(chatKind), 'chat: source kind')
   ctx.effect(() => {
     const source = sourceContext(ctx.orchestrator, chatKind)
-    source.report('chat', source.config<ChatConfig>(SOURCE) ? { state: 'ready', detail: 'Listening to the main conversation' } : health('paused', 'sourceOff'))
-    const onMessage = ({ agent, message }: { agent: Agent; message: UserMessage }): void => {
-      // Only the main Session of this installation, and only what the person typed: relays and notices the
-      // superagent itself injects are user-role messages too, and must not become Triggers.
-      if (!isOwnerMessage(source.masterId, agent.id, message)) return
-      if (source.config<ChatConfig>(SOURCE) === undefined) return
-      const text = messageText(message)
-      if (!text) return
-      void source.receive(chatTrigger({ sessionId: agent.id, threadId: threadFor(source, agent.id, String(message.id)),
-        messageId: String(message.id), text, at: new Date().toISOString() }))
-    }
-    return ctx.on('agent/inbox/inserted', onMessage)
+    source.report('chat', source.config<ChatConfig>(SOURCE) ? { state: 'ready', detail: 'Conversation only: the partner decides when to open work' } : health('paused', 'sourceOff'))
+    // The conversation is the person's own Session: its agent answers and acts directly. Nothing here opens work;
+    // the partner opens a task itself when the work should outlive the turn.
+    return () => {}
   })
 }

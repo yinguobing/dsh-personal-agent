@@ -2,7 +2,8 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { z } from 'zod'
-import { UserError, followupOwners, key, reasonText, type Decision, type DecisionKind, type EngineForMainSession, type EngineForPeople }
+import { randomUUID } from 'node:crypto'
+import { UserError, followupOwners, key, reasonText, type Decision, type DecisionKind, type Engine, type EngineForMainSession, type EngineForPeople }
   from '../../core/index.ts'
 import { IM_WORDS, NOTE_WORDS, wordCount } from '../../infra/text.ts'
 import { AssessmentSchema, EvalReadSchema, WorktreeNameSchema, type MasterAssessor } from '../assessment.ts'
@@ -19,7 +20,7 @@ const RoutingNoteSchema = z.string().trim()
   .describe(`Optional routing background or explicit human constraint, at most ${NOTE_WORDS} words. Never add implementation instructions or replace the original source.`)
 export interface MainToolsHost {
   readonly context: Context
-  readonly engine: Pick<EngineForMainSession, 'decide' | 'attach' | 'reply' | 'requestStatus' | 'note'> & EngineForPeople
+  readonly engine: Pick<EngineForMainSession, 'decide' | 'attach' | 'reply' | 'requestStatus' | 'note'> & EngineForPeople & Pick<Engine, 'receive'>
   readonly store: Pick<Store, 'tickets' | 'triggers' | 'threads' | 'atomic' | 'replyStatus' | 'settings'>
   readonly prompts: Pick<Prompts, 'preview' | 'save'>
   readonly sessions: Pick<Sessions, 'status' | 'notify' | 'delivery' | 'modelRetry'>
@@ -151,6 +152,41 @@ function routeTool(host: MainToolsHost): Tool {
     },
   })
 }
+
+/**
+ * `task_start`: the partner opens work that outlives this turn. It receives the request itself, so no candidate card is
+ * needed: the conversation decides, the task service executes.
+ */
+function taskTool(host: MainToolsHost, agent: Agent): Tool {
+  return tool({
+    name: 'task_start',
+    description: 'Start work that should outlive this turn: it runs in the background, may wait for materials or ask you questions, and reports back here. Use it for real work (a draft, research, files), not for an answer you can give now. Returns the task id.',
+    schema: z.object({
+      title: z.string().trim().min(1).max(160).describe('Short title in the person\'s language, as they would say it'),
+      instructions: z.string().trim().min(1).max(8000).describe('Everything the worker needs: what to produce, where to put it, constraints'),
+      worktree_name: z.string().max(32).regex(/^[a-z]+(?:-[a-z0-9]+){0,3}$/).optional()
+        .describe('Optional short English name for its directory; derive it from the title'),
+    }).strict(),
+    execute: async args => {
+      const id = `task-${randomUUID()}`
+      const trigger = {
+        id, source: 'chat', threads: [{ source: 'chat' as const, id: `task:${id}` }],
+        actor: { source: 'chat' as const, id: 'owner' }, human: true, addressed: 'direct' as const,
+        at: new Date().toISOString(), text: args.instructions, meta: { sessionId: agent.session.id, task: true },
+      }
+      return host.quietly(() => {
+        host.engine.receive(trigger)
+        const decision = host.engine.decide(id, { kind: 'accept', title: args.title, scope: args.instructions,
+          reason: { code: 'explicitRouted' }, acknowledgement: `好，我开始办了：${args.title}。`, name: args.worktree_name ?? 'task' })
+        if (decision.kind !== 'accept' || !decision.ticketId) return { started: false, refused: reasonText(decision.reason) }
+        host.requestPass()
+        const ticket = host.store.tickets.get(decision.ticketId)
+        return { started: true, task_id: decision.ticketId, ...(ticket ? { task: ticketCard(ticket) } : {}) }
+      })
+    },
+  })
+}
+
 /** Builds the main Session's tools; `agent` scopes prompt preview resources to that Session. */
 export function mainTools(host: MainToolsHost, agent: Agent): Tool[] {
   const resources: MainResourceHost = { ...host.resources, sessions: host.sessions, settings: host.settings }
@@ -158,6 +194,7 @@ export function mainTools(host: MainToolsHost, agent: Agent): Tool[] {
     readTool('Read one page of a resource the resource parameter lists, such as the ticket list or a ticket. Follow next_offset, and next_resource where a page names one.',
       false, (resource, offset, limit, signal) => readResource(resources, resource, offset, limit, undefined, signal)),
     routeTool(host),
+    taskTool(host, agent),
     tool({
       name: 'orchestrator_ticket_retry',
       description: 'Start a new assignment on an explicit human request to retry a ticket whose worker reported failed or blocked, or whose input was not delivered; the stalled one ends.',

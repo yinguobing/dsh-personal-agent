@@ -171,9 +171,6 @@
                 disabled: !!js process.platform !== 'win32'
           - id: tool-fs
             name: '@deepseek-ai/dsh-tool-fs'
-            config:
-              write: false
-              edit: false
           - id: tool-jobs
             name: '@deepseek-ai/dsh-tool-jobs'
             config:
