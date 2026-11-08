@@ -12,6 +12,7 @@ import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { openKnownSession, SessionNavigationError } from '../navigation.ts'
 import { App } from './app.tsx'
+import { WorkDock } from './dock.tsx'
 import { PluginConfig, usePageForm } from './deployment.tsx'
 import { en, zh } from './locales.ts'
 import type { T } from './text.ts'
@@ -45,7 +46,13 @@ function Mounted({ ctx, t }: { ctx: ClientContext; t: T }) {
   return <App t={t} openSession={openSession} deploymentForm={form} />
 }
 
-export const inject = ['slots', 'locale', 'sessions', 'uiWorkspace']
+// The conversation plugin owns `conversation.input.dock` and is not a dependency here, so declare the seat this plugin
+// registers into; without it the slot table has no such name.
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface SlotMap { 'conversation.input.dock': any }
+}
+
+export const inject = ['slots', 'locale', 'sessions', 'uiWorkspace', 'layout']
 /** Registers the panel, sidebar icon, and Plugin Manager config view; `configForms` is optional (without it, machine settings are read-only). */
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-superagent: dictionaries')
@@ -53,6 +60,10 @@ export function apply(ctx: ClientContext): void {
   ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: PANEL_ID, locale: NS, inject: () => ({}) },
     (props: { t: T }) => <Mounted ctx={ctx} t={props.t} />))
   ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({ name: 'sidebar.panellist', id: PANEL_ID, order: 10, label: () => t('panel'), locale: NS }, HammerIcon))
+  // A quiet status line above the composer of the person's own Session, opening the work list.
+  ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({ name: 'conversation.input.dock', id: PANEL_ID,
+    order: 40, locale: NS, inject: (sessionId?: string, _actions?: unknown) => ({ sessionId: sessionId ?? '', open: () => ctx.layout.selectPanel(PANEL_ID) }) },
+  (props: { sessionId: string; open: () => void; t: T }) => <WorkDock sessionId={props.sessionId} open={props.open} t={props.t} />))
   ctx.slots.inject('plugins.row.config', () => ctx.slots.register({ name: 'plugins.row.config', key: `${ENTRY}#${ENTRY}`, locale: NS },
     (props: PluginConfigViewProps & { t: T }) => <PluginConfig t={props.t} view={props.view} form={props.form} />))
 }

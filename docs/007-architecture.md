@@ -384,6 +384,7 @@ Some generic modules still refer directly to GitHub or Feishu:
 | `src/client/api.ts` | Calls and polls of the management API, typed by `src/app/api.ts`, and the Decision filters of the Eval status |
 | `src/client/route.ts` | The tabs, the settings groups, the typed routes that `parseRoute` reads, and the route memory with the settings group opened last |
 | `src/client/overview.tsx` | The overview |
+| `src/client/dock.tsx` | A quiet line above the composer of the person's own Session: how much waits, and a way into the work list |
 | `src/client/work.tsx` | One piece of work as a person reads it: what each assignment reported, the files it left with a preview, and three actions |
 | `src/app/views/artifacts.ts` | Lists the files under a ticket's own directory, with the text of small text files for preview |
 | `src/client/home.tsx` | The person's default surface: one conversation with the open work as cards, the decisions that need them above a pinned composer, and the operator's tabs behind a remembered gear |
