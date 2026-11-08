@@ -548,3 +548,17 @@ error: llm-deepseek: no API key for provider route "deepseek-official"; store DE
 | 一张票提问后回答 | 同一张票继续，追问下一个问题（未新开票） |
 
 单测：`threadFor` 在有/无等待票两种情况下的线程选择。
+
+## 2026-11-08 · 权限链路探测（未通过）
+
+目标：让 worker 撞到沙箱时停下来问人，而不是直接失败。
+
+做了什么：把 worker 预设改成 `approval: ask`，写工作区外的文件；在 host 插件注册 `ctx.on('approval/request')`，期望接管成票上的「需要许可」卡片。
+
+结果：
+- DSH 确实发出 `approval/asked`，理由完整（`escalate sandbox to danger-full-access: …`）；
+- 我们的处理器**一次都没被调用**（console.error 调试 + 构建确认）；
+- 无人回答时 worker 挂住 90 秒以上，直到会话中断才 `cancelled`；
+- 授权只有 `allowed-once`，且等于一次全局文件访问。
+
+决定：回退这套代码（不留死代码），恢复 `approval: never`；产物出工作区改用「人从结果页导出」。

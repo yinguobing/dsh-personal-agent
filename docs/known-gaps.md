@@ -20,6 +20,20 @@
 
 **会怎样**：首页与单件事都能看懂，想改配置就得进齿轮后面的工程师页面。
 
+## 0.6 权限：DSH 会问，我们接不住
+
+**状态**：worker 撞上工作区外写入时，DSH 会产生 `approval/asked`（带工具名与理由），但**我们没能在插件里回答它**。
+
+**实测**：
+
+- 把 worker 的 `approval` 设成 `ask`，写 `/home/xiaobai/psa-perm-test.md` → 日志出现
+  `approval/asked … reason: "escalate sandbox to danger-full-access: …"`；
+- 90 秒内票一直 `working`，没人回答就**挂住**，直到会话被中断才记成 `cancelled`；
+- 我在 host 插件里注册 `ctx.on('approval/request', …)`，两次实测、构建确认，**处理器没有被调用**——审批瀑布按 agent 作用域过滤，我们不在其中；
+- 授权语汇只有 `allowed-once`，没有“允许这个文件夹”。而 `allowed-once` 的实际含义是**一次全局文件访问**。
+
+**结论**：这一轮不做“让人选”，回到 `approval: never`。产物离开工作区的方式改为**人从结果页导出**（下一步实现），而不是给 agent 更大权限。
+
 ## 1. 真实微信没验过
 
 **状态**：只用本地 iLink 替身跑通过，没有用真实机器人账号扫码收发。
