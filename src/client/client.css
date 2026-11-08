@@ -399,3 +399,12 @@ a.dt-btn, a.dt-btn:hover { text-decoration: none; }
 .dt-stream-card { display: flex; flex-direction: column; gap: 6px; max-width: 92%; padding: 10px 12px; border: 0.5px solid var(--dsw-alias-border-l3); border-radius: 12px; background: var(--dsw-alias-bg-layer-1); }
 .dt-stream-card-person { border-color: var(--dsw-alias-brand-primary); }
 .dt-stream-card-proposal { background: var(--dsw-alias-bg-module-platform); }
+.dt-work { display: flex; flex-direction: column; height: 100%; min-height: 0; gap: 8px; }
+.dt-work-head { display: flex; align-items: center; gap: 8px; min-height: 40px; }
+.dt-work-title { margin: 0; font-size: 16px; font-weight: 600; }
+.dt-work-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding: 8px 0 16px; }
+.dt-work-section { display: flex; flex-direction: column; gap: 8px; }
+.dt-work-label { margin: 0; font-size: 12px; font-weight: 500; color: var(--dsw-alias-label-caption); }
+.dt-work-file summary { display: flex; justify-content: space-between; gap: 12px; cursor: pointer; }
+.dt-work-text { margin: 8px 0 0; padding: 8px; max-height: 320px; overflow: auto; font-size: 12px; white-space: pre-wrap; background: var(--dsw-alias-bg-layer-2); border-radius: 8px; }
+.dt-work-actions { flex: none; display: flex; gap: 8px; padding: 10px 0 16px; border-top: 0.5px solid var(--dsw-alias-border-l3); }

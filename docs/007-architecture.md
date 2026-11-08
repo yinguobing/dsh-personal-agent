@@ -384,6 +384,8 @@ Some generic modules still refer directly to GitHub or Feishu:
 | `src/client/api.ts` | Calls and polls of the management API, typed by `src/app/api.ts`, and the Decision filters of the Eval status |
 | `src/client/route.ts` | The tabs, the settings groups, the typed routes that `parseRoute` reads, and the route memory with the settings group opened last |
 | `src/client/overview.tsx` | The overview |
+| `src/client/work.tsx` | One piece of work as a person reads it: what each assignment reported, the files it left with a preview, and three actions |
+| `src/app/views/artifacts.ts` | Lists the files under a ticket's own directory, with the text of small text files for preview |
 | `src/client/home.tsx` | The person's default surface: one conversation with the open work as cards, the decisions that need them above a pinned composer, and the operator's tabs behind a remembered gear |
 | `src/client/observed.tsx` | The section that offers recorded proposals, with one button to let the work happen and one to drop it |
 | `src/app/views/observed.ts` | What observe mode would have done: recorded proposals whose Trigger still exists and no ticket took up, for the panel to approve or drop |

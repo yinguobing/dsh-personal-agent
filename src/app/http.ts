@@ -29,6 +29,7 @@ import { sourcesStatus, type SetupState } from './views/sources.ts'
 import { decisionList, search, threadDetail, threadList } from './views/threads.ts'
 import { executorLoad, ticketDetail, ticketList } from './views/tickets.ts'
 import { observedList } from './views/observed.ts'
+import { artifactList } from './views/artifacts.ts'
 
 /** One turn of the person's conversation, as the panel shows it. */
 export interface ChatMessage { role: 'user' | 'assistant'; text: string; at: string }
@@ -204,6 +205,12 @@ function routes(runtime: HttpHost): Routes {
       return ticketList(views(runtime), state, offset, limit)
     },
     'GET tickets/:id': ({ params }) => ticketPage(runtime, params.id),
+    // The person opens what the work produced, not the directory it was produced in.
+    'GET tickets/:id/artifacts': ({ params }) => {
+      const ticket = runtime.store.tickets.get(params.id)
+      if (!ticket) throw new RouteError(404, 'Ticket not found')
+      return { files: artifactList(ticket.execution?.directory) }
+    },
     'POST tickets/:id/retry': ({ params }) => { const id = ticket(params.id); runtime.engine.retryTicket(id); return { retried: true } },
     'POST tickets/:id/stop': ({ params }) => { const id = ticket(params.id); runtime.engine.stopTicket(id); return { stopped: true } },
     'POST executor/pause': async ({ body }) => runtime.settings.pause(z.object({ paused: z.boolean() }).parse(await body()).paused, 'panel'),
@@ -222,7 +229,11 @@ function routes(runtime: HttpHost): Routes {
     // One request for the person's first screen: the conversation, the work in flight, and what observe proposed.
     'GET home': ({ query }) => {
       const { limit } = HomeQuery.parse(query)
-      return { ...runtime.chat(limit), tickets: ticketList(views(runtime), 'open', 0, 100).items,
+      // Open work first, then what ended in the last two days, so a finished piece stays reachable from the home.
+      const ended = ticketList(views(runtime), 'ended', 0, 20).items
+        .filter(row => (row.ended?.at ?? row.updatedAt) >= new Date(Date.now() - 48 * 3_600_000).toISOString())
+        .slice(0, 10)
+      return { ...runtime.chat(limit), tickets: [...ticketList(views(runtime), 'open', 0, 100).items, ...ended],
         observed: observedList(views(runtime), 20).items, masterId: runtime.masterId }
     },
     'GET observed': ({ query }) => observedList(views(runtime), ObservedQuery.parse(query).limit),

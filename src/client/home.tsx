@@ -6,6 +6,7 @@ import { Button, Icon } from './controls.tsx'
 import { ChatComposer, GettingStarted } from './chat.tsx'
 import { useAction, usePanel, usePanelData } from './provider.tsx'
 import { Hint } from './widgets.tsx'
+import { WorkPanel } from './work.tsx'
 
 type Home = ApiResponse<'GET home'>
 type Row = Home['tickets'][number]
@@ -14,6 +15,7 @@ type Proposal = Home['observed'][number]
 
 /** A ticket's state in everyday words, with no domain vocabulary. */
 function stateWord(t: ReturnType<typeof usePanel>['t'], row: Row): string {
+  if (row.stage === 'ended') return t('workState.ready')
   if (row.stage === 'working') return t('homeDoing')
   if (row.stage === 'idle') return t('homeIdle')
   if (row.stage === 'person') {
@@ -45,11 +47,12 @@ function stream(home: Home | undefined): Item[] {
 }
 
 export function HomePage({ onAdvanced }: { onAdvanced: () => void }) {
-  const { t, call, navigate } = usePanel()
+  const { t, call } = usePanel()
   const { setup } = usePanelData()
   const [limit, setLimit] = useState(40)
   const [seed, setSeed] = useState<string>()
   const [focusSignal, setFocusSignal] = useState(0)
+  const [selected, setSelected] = useState<Row>()
   const home = usePoll(() => call('GET home', { query: { limit } }), [limit], 4000)
   const send = useAction(async (text: string) => {
     await call('POST chat', { body: { text, requestId: `panel-${Date.now()}-${Math.random().toString(16).slice(2)}` } })
@@ -60,6 +63,12 @@ export function HomePage({ onAdvanced }: { onAdvanced: () => void }) {
   const waiting = (home.data?.tickets ?? []).filter(row => row.stage === 'person')
   const proposals = home.data?.observed ?? []
   const answer = () => setFocusSignal(value => value + 1)
+  if (selected) return <div className="dt-page dt-home-page">
+    <div className="dt-home">
+      <WorkPanel row={selected} onClose={() => setSelected(undefined)}
+        onRewrite={text => { setSeed(text); setSelected(undefined); setFocusSignal(value => value + 1) }} />
+    </div>
+  </div>
   return <div className="dt-page dt-home-page">
     <div className="dt-home">
       <header className="dt-head">
@@ -79,7 +88,7 @@ export function HomePage({ onAdvanced }: { onAdvanced: () => void }) {
             </li>
             : <li key={item.key} className={`dt-stream-card dt-stream-card-${item.row.stage}`}>
               <div className="dt-card-head">
-                <button type="button" className="dt-open" onClick={() => navigate({ page: 'execution', id: item.row.id })}>
+                <button type="button" className="dt-open" onClick={() => setSelected(item.row)}>
                   {item.row.title}
                 </button>
                 <span className="dt-home-state">{stateWord(t, item.row)}</span>

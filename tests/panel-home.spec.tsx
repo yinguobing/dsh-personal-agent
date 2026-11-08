@@ -19,6 +19,19 @@ it('opens on one conversation, with the work in flight inside it and no tabs', a
   expect(text()).toContain(zh['observedAct'])
 })
 
+it('opens a piece of work as what it did and what it left, and can seed a change', async () => {
+  await mount(zh, 'simple')
+  await click(all('.dt-stream-card .dt-open')[0]!)
+  expect(text()).toContain(zh['workDid'])
+  expect(text()).toContain(zh['workResult'])
+  expect(text()).toContain('drafts/morning.md')
+  await click(zh['workChange'])
+  // Back on the home, with the composer holding the seed and nothing sent.
+  expect(all('.dt-stream')).toHaveLength(1)
+  const input = document.querySelector<HTMLTextAreaElement>('.dt-chat-input')!
+  expect(input.value).toContain('关于「')
+})
+
 it('keeps the way into the operator view behind a gear, and comes back', async () => {
   await mount(zh, 'simple')
   // The gear is named for screen readers rather than labelled on screen.
