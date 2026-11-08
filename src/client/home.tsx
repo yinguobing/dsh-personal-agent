@@ -1,7 +1,7 @@
 /** The default surface for the person: what it is doing, what waits on them, and what it would like to do. */
 import { usePoll } from './api.ts'
 import type { TicketListView } from '../app/views/tickets.ts'
-import { Button } from './controls.tsx'
+import { Button, Icon } from './controls.tsx'
 import { ChatEntry } from './chat.tsx'
 import { ObservedProposals } from './observed.tsx'
 import { usePanel } from './provider.tsx'
@@ -49,7 +49,8 @@ export function HomePage({ onAdvanced }: { onAdvanced: () => void }) {
       <header className="dt-head">
         <div className="dt-head-title"><h1 className="dt-title">{t('title')}</h1></div>
         <div className="dt-toolbar">
-          <Button variant="ghost" size="sm" onClick={onAdvanced}>{t('homeAdvanced')}</Button>
+          <Button variant="ghost" size="sm" icon={<Icon name="gear" />} aria-label={t('homeAdvanced')}
+            title={t('homeAdvanced')} onClick={onAdvanced} />
         </div>
       </header>
       <main className="dt-main">

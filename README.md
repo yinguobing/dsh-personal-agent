@@ -29,7 +29,7 @@ is the configuration the script would have written:
 
 ```sh
 dsh plugin --profile personal add \
-  https://github.com/yinguobing/dsh-personal-agent/releases/download/v0.3.1/dsh-personal-agent-0.3.1.tgz
+  https://github.com/yinguobing/dsh-personal-agent/releases/download/v0.3.2/dsh-personal-agent-0.3.2.tgz
 ```
 
 Installing straight from git is not supported: the build output is not committed, and pnpm asks for a per-commit

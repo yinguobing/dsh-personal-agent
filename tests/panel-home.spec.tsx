@@ -2,7 +2,7 @@
 // The simple home that a person sees by default.
 import { expect, it } from 'vitest'
 import { zh } from '../src/client/locales.ts'
-import { usePanel, mount, all, click, text } from './fixtures/panel.tsx'
+import { usePanel, mount, all, click, find, text } from './fixtures/panel.tsx'
 
 usePanel()
 it('opens on the simple home: the conversation, your things, and one way into the operator view', async () => {
@@ -11,7 +11,8 @@ it('opens on the simple home: the conversation, your things, and one way into th
   expect(all('.dt-chat')).toHaveLength(1)
   expect(text()).toContain(zh['homeThings'])
   expect(text()).toContain(zh['homeDoing'])
-  expect(text()).toContain(zh['homeAdvanced'])
+  // The way into the operator view is an icon now, named for screen readers.
+  expect(find(zh['homeAdvanced']).getAttribute('aria-label')).toBe(zh['homeAdvanced'])
   expect(text()).not.toContain(zh['tab.eval'])
 })
 
