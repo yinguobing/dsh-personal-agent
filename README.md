@@ -24,6 +24,12 @@ From a clone, one command installs it into its own DSH profile and writes the se
 node scripts/install.mjs --profile personal --port 3082
 ```
 
+Two flags cover what that one command assumes. `--home <path>` installs into another DSH home — the default is
+`$DSH_HOME`, then `~/.dsh`; the profile, the agent's state directory and `.credentials.yaml` all live under it, so a
+second home is a second agent that shares nothing with the first. `--bundle <spec>` installs a package other than the
+clone you are standing in: a local path installs that directory, anything else — a package name or a tarball URL — is
+handed to `dsh plugin add` as it is (that is also how you install the release tarball below).
+
 From the release tarball, install the package and write that configuration yourself; `examples/profile.cordis.patch.yml`
 is the configuration the script would have written:
 
