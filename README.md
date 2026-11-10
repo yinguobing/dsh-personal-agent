@@ -18,11 +18,17 @@ It is also a way of working with an agent: **take as little human attention as p
 This fork turns the prototype into a personal agent for one person: talk to it in the panel or on WeChat, drop material
 into a folder it watches, and it opens a work item only when you ask or a rule allows it.
 
-From a clone, one command installs it into its own DSH profile and writes the settings it needs:
+From a clone, build it first, then install it into its own DSH profile and write the settings it needs:
 
 ```sh
+pnpm install && pnpm build
 node scripts/install.mjs --profile personal --port 3082
 ```
+
+The build is not optional. `install.mjs` adds the current directory to the profile as a local package, and that package
+ships `lib/` — the `files` field in `package.json` lists it — which is compiled output and not committed. A fresh clone
+has no `lib/`, so installing before building links a package that resolves but fails to load once the profile starts;
+run the build in the clone you install from, not somewhere else.
 
 From the release tarball, install the package and write that configuration yourself; `examples/profile.cordis.patch.yml`
 is the configuration the script would have written:
