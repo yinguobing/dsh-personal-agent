@@ -10,6 +10,23 @@ node scripts/install.mjs --profile personal --port 3082
 
 它建一个独立的 DSH profile，装好这个 agent，并把该配的都配上（包括 worker 的权限——漏了这一步，活会卡在等审批）。
 
+默认装进 `~/.dsh`（设了 `DSH_HOME` 就听它的）。要把助手装到别的主目录，加 `--home`：
+
+```sh
+node scripts/install.mjs --profile personal --port 3082 --home ~/.dsh-work
+```
+
+profile、它的状态目录、还有 `.credentials.yaml` 都跟着这个 home 走——换一个 home 就是另一个互不相干的助手，密钥也要重新给（见第 2 步）。
+
+脚本默认把它自己所在的这份代码装进去。要装别的包——发出来的 tarball、或本地另一份构建产物——用 `--bundle` 指过去：
+
+```sh
+node scripts/install.mjs --profile personal --port 3082 \
+  --bundle https://github.com/yinguobing/dsh-personal-agent/releases/download/v0.10.0/dsh-personal-agent-0.10.0.tgz
+```
+
+本机路径（`./` 开头或绝对路径）按本地目录装，其余原样交给 `dsh plugin add`。
+
 ## 2. 给一个模型密钥
 
 安装脚本会检查。没有的话，它会把命令直接给你：
