@@ -18,9 +18,13 @@ It is also a way of working with an agent: **take as little human attention as p
 This fork turns the prototype into a personal agent for one person: talk to it in the panel or on WeChat, drop material
 into a folder it watches, and it opens a work item only when you ask or a rule allows it.
 
-From a clone, one command installs it into its own DSH profile and writes the settings it needs:
+From a clone, build it first. A clean clone has no `lib/`, because the build output is not committed, and the installer
+links the current directory into the profile as a package, so installing without a build leaves a profile that fails to
+start. `pnpm install` fetches the dev-dependency tooling and `pnpm build` writes `lib/`. Then the installer adds it to
+its own DSH profile and writes the settings it needs:
 
 ```sh
+pnpm install && pnpm build
 node scripts/install.mjs --profile personal --port 3082
 ```
 
