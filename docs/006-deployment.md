@@ -31,20 +31,41 @@ Both presets run with `danger-full-access` as the operator's OS user and read me
 ### Agent GitHub account
 
 1. Create a GitHub user account for the agent and give it write access to the repository. A GitHub App cannot be the agent, because dsh-superagent reads the account's notifications.
-2. Give it a GitHub CLI that uses only its own credentials:
+2. Give it a GitHub CLI that uses only its own credentials. `GH_CONFIG_DIR` moves only configuration files, not credentials. On Linux, when a system keyring is available, `gh` stores the token there under the host and account, not under the configuration directory, and keeps a host-wide active entry shared by both configurations. `gh-agent auth login` can therefore replace the token your own `gh` uses, and your pull requests and comments then appear as the agent. Set the token itself instead:
+
+   **Recommended: pass the token through `GH_TOKEN`.** It takes precedence over stored credentials, so `gh` uses it instead of the keyring. In the agent account's settings, create a classic personal access token with the `repo` and `read:org` scopes, and `workflow` if workers may change workflow files. Store it in a file only you can read:
 
    ```sh
-   mkdir -p ~/.local/bin
+   mkdir -p ~/.local/bin ~/.config/gh-agent
+   touch ~/.config/gh-agent/token
+   chmod 600 ~/.config/gh-agent/token
+   # Put the agent's classic personal access token in that file.
+   cat > ~/.local/bin/gh-agent <<'EOF'
+   #!/bin/sh
+   set -eu
+   token=$(cat "$HOME/.config/gh-agent/token")
+   [ -n "$token" ] || { echo "gh-agent: empty token file" >&2; exit 1; }
+   GH_CONFIG_DIR="$HOME/.config/gh-agent" GH_TOKEN="$token" exec gh "$@"
+   EOF
+   chmod +x ~/.local/bin/gh-agent
+   gh-agent api user --jq .login
+   ```
+
+   The last command prints the agent's login; dsh-superagent reads it the same way. Setup removes `GH_TOKEN` and `GITHUB_TOKEN` from the worker environment, but the wrapper sets the value in its own process, so `gh` and its git credential helper still see it. The token file is a plain-text credential: keep its mode at 600, do not commit it, and rotate it on expiry. Classic tokens cannot be limited to one repository, so keep the agent account's repository access narrow. Do not use a fine-grained token: the notifications API that the GitHub Source polls accepts only classic tokens. `gh auth login` is not part of this wrapper: with `GH_TOKEN` set it refuses, and without it a login would write the shared keyring.
+
+   **Alternative: keep the login in the private configuration directory.** Sign in once with `--insecure-storage`, which writes the token to `~/.config/gh-agent/hosts.yml` instead of the keyring:
+
+   ```sh
    cat > ~/.local/bin/gh-agent <<'EOF'
    #!/bin/sh
    GH_CONFIG_DIR="$HOME/.config/gh-agent" exec gh "$@"
    EOF
    chmod +x ~/.local/bin/gh-agent
-   gh-agent auth login
+   gh-agent auth login --insecure-storage
    gh-agent api user --jq .login
    ```
 
-   Sign in as the agent account; the last command prints its login. dsh-superagent reads the login the same way.
+   `--with-token` accepts a classic token from standard input, for example `gh-agent auth login --with-token --insecure-storage < token-file`; without `--insecure-storage` it stores the token in the shared keyring. This variant keeps `gh auth status` and `gh auth switch` usable per configuration. It stores the token in plain text and can clear the keyring's host-wide entry when it activates an account; check `gh auth status` with your own `gh` afterwards and sign in again if needed. For stronger separation, use a dedicated OS account, as described under Permissions and isolation.
 
 ### Feishu bot (optional)
 
